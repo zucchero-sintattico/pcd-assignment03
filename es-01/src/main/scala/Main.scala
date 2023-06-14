@@ -1,4 +1,4 @@
-import assignment.actors.ReportAggregator.Command.AddStatistic
+import assignment.actors.ReportBuilder.Command.AddStatistic
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import akka.actor.typed.{ActorRef, ActorSystem, Behavior, Terminated}
 import akka.actor.typed.scaladsl.Behaviors

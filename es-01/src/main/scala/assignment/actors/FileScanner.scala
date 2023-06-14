@@ -10,13 +10,13 @@ import scala.util.Try
 
 object FileScanner:
   enum Command:
-    case Scan(path: Path, replyTo: ActorRef[ReportAggregator.Command])
+    case Scan(path: Path, replyTo: ActorRef[ReportBuilder.Command])
 
   def apply(): Behavior[Command] =
     import Command.*
     Behaviors.setup { context =>
       Behaviors.receiveMessage {
-        case Scan(path, replyTo) =>
+        case Scan(path, reportBuilder) =>
           // Create the Statistic with file lines
           // Use try with resources to close the file
           val statistic = Try {
@@ -25,7 +25,7 @@ object FileScanner:
             source.close()
             Statistic(path, lines)
           }.getOrElse(Statistic(path, 0))
-          replyTo ! ReportAggregator.Command.AddStatistic(statistic)
+          reportBuilder ! ReportBuilder.Command.AddStatistic(statistic)
           Behaviors.stopped
       }
     }
