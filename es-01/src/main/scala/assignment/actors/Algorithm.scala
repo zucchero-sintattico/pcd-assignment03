@@ -29,7 +29,7 @@ object NotificationListeners:
 object Algorithm:
 
   enum Command:
-    case Start(path: Path, notifyTo: ActorRef[NotificationListeners.Command])
+    case Start(path: Path)
     case Stop
 
   def idle(): Behavior[Command] = Behaviors.receiveMessage {
