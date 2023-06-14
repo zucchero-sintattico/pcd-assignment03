@@ -1,56 +1,53 @@
 package assignment.actors
 
-import akka.actor.typed.{ActorRef, Behavior}
+import Algorithm.Command
+import Algorithm.Command.{Start, Stop}
+import akka.actor.typed.{ActorRef, Behavior, Terminated}
 import akka.actor.typed.scaladsl.Behaviors
 import assignment.Statistic
 
 import java.nio.file.Path
 
-object NotificationListeners:
-
-  enum Command:
-    case NumberOfFilesChanged(numberOfFiles: Int)
-    case TopNChanged(top: List[Statistic])
-    case DistributionChanged(distribution: Map[Range, Int])
-
-  def apply(): Behavior[Command] =
-    Behaviors.receiveMessage {
-      case Command.NumberOfFilesChanged(numberOfFiles) =>
-        println(s"Number of files changed to $numberOfFiles")
-        Behaviors.same
-      case Command.TopNChanged(top) =>
-        println(s"Top N changed to $top")
-        Behaviors.same
-      case Command.DistributionChanged(distribution) =>
-        println(s"Distribution changed to $distribution")
-        Behaviors.same
-    }
-
 object Algorithm:
-
   enum Command:
-    case Start(path: Path, notifyTo: ActorRef[NotificationListeners.Command])
+    case Start(path: Path)
     case Stop
 
-  def idle(): Behavior[Command] = Behaviors.receiveMessage {
-    case Command.Start(path, notifyTo) =>
-      running(path, notifyTo)
-    case Command.Stop =>
-      Behaviors.stopped
-  }
+  def apply(): Behavior[Command] = idle()
 
-  def running(path: Path, notifyTo: ActorRef[NotificationListeners.Command]): Behavior[Command] =
+  def idle(): Behavior[Command] =
     Behaviors.setup { context =>
-      val scanner = context.spawn(FolderScanner(), "scanner")
-
-      Behaviors.receiveMessage {
-        case Command.Stop =>
-          Behaviors.stopped
-        case Command.Start(path, notifyTo) =>
-          running(path, notifyTo)
+      import Command._
+      println("Algorithm started in idle state")
+      Behaviors.receiveMessage[Command] {
+        case Start(path) => started(path)
+        case Stop => Behaviors.same
       }
     }
 
-  def completed(): Behavior[Command] = Behaviors.stopped
+  def started(path: Path): Behavior[Command] =
+    Behaviors.setup { context =>
+      import Command._
+      println("Algorithm switched to started state")
+      val reportConfiguration = ReportConfiguration(10, 20, 30)
+      val notificationListeners = context.spawn(NotificationListeners(), "notificationListeners")
+      val reportBuilder = context.spawn(ReportBuilder(reportConfiguration, notificationListeners), "reportBuilder")
+      val folderScanner = context.spawn(FolderScanner(), "folderScanner")
+      context.watch(folderScanner)
+      folderScanner ! FolderScanner.Command.Scan(path, reportBuilder)
+      Behaviors.receiveMessage[Command] {
+        case Start(path) => Behaviors.same
+        case Stop =>
+          println("Stopping Algorithm")
+          context.stop(folderScanner)
+          reportBuilder ! ReportBuilder.Command.Complete
+          context.stop(reportBuilder)
+          Behaviors.stopped
+      }.receiveSignal {
+        case (_, Terminated(_)) =>
+          println("FolderScanner terminated")
+          reportBuilder ! ReportBuilder.Command.Complete
+          Behaviors.stopped
+      }
 
-  def apply(): Behavior[Command] = idle()
+    }
