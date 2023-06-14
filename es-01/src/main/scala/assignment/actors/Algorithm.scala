@@ -16,33 +16,33 @@ object Algorithm:
   def apply(): Behavior[Command] = idle()
 
   def idle(): Behavior[Command] =
-    Behaviors.setup { context =>
-      import Command._
-      println("Algorithm started in idle state")
-      Behaviors.receiveMessage[Command] {
+    Behaviors.receiveMessage[Command] {
         case Start(path) => started(path)
         case Stop => Behaviors.same
-      }
     }
+
 
   def started(path: Path): Behavior[Command] =
     Behaviors.setup { context =>
       import Command._
       println("Algorithm switched to started state")
+
       val reportConfiguration = ReportConfiguration(10, 20, 30)
       val notificationListener = context.spawn(NotificationListeners(), "notificationListeners")
       val reportBuilder = context.spawn(ReportBuilder(reportConfiguration, notificationListener), "reportBuilder")
+
       val folderScanner = context.spawn(FolderScanner(), "folderScanner")
       context.watch(folderScanner)
       folderScanner ! FolderScanner.Command.Scan(path, reportBuilder)
+
       Behaviors.receiveMessage[Command] {
         case Start(path) => Behaviors.same
         case Stop =>
           println("Stopping Algorithm")
+          context.unwatch(folderScanner)
           context.stop(folderScanner)
           reportBuilder ! ReportBuilder.Command.Complete
-          context.stop(reportBuilder)
-          Behaviors.stopped
+          idle()
       }.receiveSignal {
         case (_, Terminated(_)) =>
           println("FolderScanner terminated")
