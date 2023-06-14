@@ -14,9 +14,10 @@ object ReportBuilder:
     Behaviors.setup { context =>
       Behaviors.receiveMessage {
         case AddStatistic(statistic) =>
-          // TODO: add statistic
+          println(s"Received statistic: $statistic")
           Behaviors.same
         case Complete =>
+          println("Completed")
           Behaviors.stopped
       }
     }

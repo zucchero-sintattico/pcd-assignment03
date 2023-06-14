@@ -1,28 +1,62 @@
 package assignment.actors
 
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorRef, Behavior}
+import akka.actor.typed.{ActorRef, Behavior, Terminated}
 import assignment.Statistic
 
 import java.nio.file.Path
+import scala.math.Fractional.Implicits.infixFractionalOps
 
 object FolderScanner:
   enum Command:
     case Scan(path: Path, reportBuilder: ActorRef[ReportBuilder.Command])
+    case Stop
 
-  def apply(): Behavior[Command] =
+  def apply(): Behavior[Command] = idle()
+
+  def idle(): Behavior[Command] =
+    import Command.*
+    Behaviors.receiveMessage[Command] {
+      case Scan(path, reportBuilder) => started(path, reportBuilder)
+      case Stop => Behaviors.same
+    }
+
+  def started(path: Path, reportBuilder: ActorRef[ReportBuilder.Command]): Behavior[Command] =
     import Command.*
     Behaviors.setup { context =>
-      Behaviors.receiveMessage {
-        case Scan(path, reportBuilder) =>
-          // Scan the folder and spawn other folder scanners for subfolders
-          val files = path.toFile.listFiles()
-          files.foreach { file =>
-            if file.isDirectory then
-              context.spawn(FolderScanner(), file.getName) ! Scan(file.toPath, reportBuilder)
-            else
-              context.spawn(FileScanner(), file.getName) ! FileScanner.Command.Scan(file.toPath, reportBuilder)
-          }
-          Behaviors.same
+      var children = List.empty[ActorRef[Nothing]]
+      val allFiles = path.toFile.listFiles().toList
+      val directories = allFiles.filter(_.isDirectory)
+      val files = allFiles
+        .filterNot(_.isDirectory)
+        .filter(_.toString.endsWith(".java"))
+
+      directories.foreach { directory =>
+        val child = context.spawn(FolderScanner(), s"folderScanner-${directory.getName}")
+        children = child :: children
+        context.watch(child)
+        child ! Scan(directory.toPath, reportBuilder)
+      }
+
+      files.foreach { file =>
+        val child = context.spawn(FileScanner(), s"fileScanner-${file.getName}")
+        children = child :: children
+        context.watch(child)
+        child ! FileScanner.Command.Scan(file.toPath, reportBuilder)
+      }
+
+      Behaviors.receiveMessage[Command] {
+        case Scan(_, _) => Behaviors.same
+        case Stop =>
+          children.foreach(context.stop)
+          Behaviors.stopped
+      }.receiveSignal {
+        case (_, Terminated(ref)) =>
+          children = children.filterNot(_ == ref)
+          if children.isEmpty then
+            Behaviors.stopped
+          else
+            Behaviors.same
       }
     }
+
