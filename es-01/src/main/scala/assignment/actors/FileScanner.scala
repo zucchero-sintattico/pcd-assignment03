@@ -17,12 +17,14 @@ object FileScanner:
     Behaviors.setup { context =>
       Behaviors.receiveMessage {
         case Scan(path, reportBuilder) =>
+          println(s"Scanning file: $path")
           val statistic = Try {
             val source = Source.fromFile(path.toFile)
             val lines = source.getLines().toList.size
             source.close()
             Statistic(path, lines)
           }.getOrElse(Statistic(path, 0))
+          println(s"Scanned file: $path")
           reportBuilder ! ReportBuilder.Command.AddStatistic(statistic)
           Behaviors.stopped
       }

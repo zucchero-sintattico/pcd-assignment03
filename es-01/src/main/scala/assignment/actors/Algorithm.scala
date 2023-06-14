@@ -30,8 +30,8 @@ object Algorithm:
       import Command._
       println("Algorithm switched to started state")
       val reportConfiguration = ReportConfiguration(10, 20, 30)
-      val notificationListeners = context.spawn(NotificationListeners(), "notificationListeners")
-      val reportBuilder = context.spawn(ReportBuilder(reportConfiguration, notificationListeners), "reportBuilder")
+      val notificationListener = context.spawn(NotificationListeners(), "notificationListeners")
+      val reportBuilder = context.spawn(ReportBuilder(reportConfiguration, notificationListener), "reportBuilder")
       val folderScanner = context.spawn(FolderScanner(), "folderScanner")
       context.watch(folderScanner)
       folderScanner ! FolderScanner.Command.Scan(path, reportBuilder)
@@ -47,7 +47,12 @@ object Algorithm:
         case (_, Terminated(_)) =>
           println("FolderScanner terminated")
           reportBuilder ! ReportBuilder.Command.Complete
-          Behaviors.stopped
+          context.watch(reportBuilder)
+          Behaviors.receiveSignal {
+            case (_, Terminated(_)) =>
+              println("ReportBuilder terminated")
+              Behaviors.same
+          }
       }
 
     }

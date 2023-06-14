@@ -19,37 +19,36 @@ object ReportBuilder:
     case AddStatistic(statistic: Statistic)
     case Complete
 
-  def apply(reportConfiguration: ReportConfiguration, replyTo: ActorRef[NotificationListeners.Command]): Behavior[Command] =
-    import Command.*
-    var statisticsList: List[Statistic] = List.empty
-    val report = new Report(reportConfiguration)
-
+  def apply(reportConfiguration: ReportConfiguration, notifyTo: ActorRef[NotificationListeners.Command]): Behavior[Command] =
     Behaviors.setup { context =>
+      import Command.*
+      val report = new Report(reportConfiguration)
       Behaviors.receiveMessage {
-
         case AddStatistic(statistic) =>
-          statisticsList = statisticsList :+ statistic
+          println("Received statistic: " + statistic)
+          report.statistics = report.statistics :+ statistic
           // update topN
 
           // check if topN is not full
           if (report.topStatistics.size < report.configuration.n) {
             this.insertTopSorted(report, statistic)
-            replyTo ! NotificationListeners.Command.TopNChanged(report.topStatistics)
+            notifyTo ! NotificationListeners.Command.TopNChanged(report.topStatistics)
           }
           // check if topN is full and the new statistic is bigger than the smallest
           else if (report.topStatistics.apply(report.configuration.n - 1).size < statistic.size) {
             report.topStatistics = report.topStatistics.dropRight(1)
             this.insertTopSorted(report, statistic)
-            replyTo ! NotificationListeners.Command.TopNChanged(report.topStatistics)
+            notifyTo ! NotificationListeners.Command.TopNChanged(report.topStatistics)
           }
 
           // update distribution
           for range <- report.distribution.keys do
             if (statistic.size >= range.min && statistic.size <= range.max) then
               report.distribution = report.distribution.updated(range, report.distribution.apply(range) + 1)
-              replyTo ! NotificationListeners.Command.DistributionChanged(report.distribution)
+              println("im here")
+              notifyTo ! NotificationListeners.Command.DistributionChanged(report.distribution)
 
-          replyTo ! NotificationListeners.Command.NumberOfFilesChanged(statisticsList.size)
+          notifyTo ! NotificationListeners.Command.NumberOfFilesChanged(report.statistics.size)
           Behaviors.same
         case Complete =>
           println("Completed")

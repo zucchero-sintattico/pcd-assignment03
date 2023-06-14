@@ -24,7 +24,7 @@ object FolderScanner:
   def started(path: Path, reportBuilder: ActorRef[ReportBuilder.Command]): Behavior[Command] =
     import Command.*
     Behaviors.setup { context =>
-      var children = List.empty[ActorRef[Nothing]]
+      var children = 0
       val allFiles = path.toFile.listFiles().toList
       val directories = allFiles.filter(_.isDirectory)
       val files = allFiles
@@ -33,30 +33,32 @@ object FolderScanner:
 
       directories.foreach { directory =>
         val child = context.spawn(FolderScanner(), s"folderScanner-${directory.getName}")
-        children = child :: children
+        children += 1
         context.watch(child)
         child ! Scan(directory.toPath, reportBuilder)
       }
 
       files.foreach { file =>
         val child = context.spawn(FileScanner(), s"fileScanner-${file.getName}")
-        children = child :: children
+        children += 1
         context.watch(child)
         child ! FileScanner.Command.Scan(file.toPath, reportBuilder)
       }
 
-      Behaviors.receiveMessage[Command] {
-        case Scan(_, _) => Behaviors.same
-        case Stop =>
-          children.foreach(context.stop)
-          Behaviors.stopped
-      }.receiveSignal {
-        case (_, Terminated(ref)) =>
-          children = children.filterNot(_ == ref)
-          if children.isEmpty then
+      if children == 0 then
+        Behaviors.stopped
+      else
+        Behaviors.receiveMessage[Command] {
+          case Scan(_, _) => Behaviors.same
+          case Stop =>
             Behaviors.stopped
-          else
-            Behaviors.same
-      }
+        }.receiveSignal {
+          case (_, Terminated(ref)) =>
+            children -= 1
+            if children == 0 then
+              Behaviors.stopped
+            else
+              Behaviors.same
+        }
     }
 
