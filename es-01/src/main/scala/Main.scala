@@ -2,7 +2,7 @@ import assignment.actors.ReportBuilder.Command.AddStatistic
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import akka.actor.typed.{ActorRef, ActorSystem, Behavior, Terminated}
 import akka.actor.typed.scaladsl.Behaviors
-import assignment.actors.{FolderScanner, ReportBuilder}
+import assignment.actors.{FolderScanner, NotificationListeners, ReportBuilder, ReportConfiguration}
 
 import java.nio.file.{Files, Path}
 import scala.concurrent.Future
@@ -28,7 +28,8 @@ object Algorithm:
     Behaviors.setup { context =>
       import Command._
       println("Algorithm switched to started state")
-      val reportBuilder = context.spawn(ReportBuilder(), "reportBuilder")
+      val notifyListener = context.spawn(NotificationListeners(), "notifyListener")
+      val reportBuilder = context.spawn(ReportBuilder(ReportConfiguration(10, 10, 10), notifyListener), "reportBuilder")
       val folderScanner = context.spawn(FolderScanner(), "folderScanner")
       context.watch(folderScanner)
       folderScanner ! FolderScanner.Command.Scan(path, reportBuilder)
@@ -48,6 +49,7 @@ object Algorithm:
       }
 
     }
+
 @main def main(): Unit =
   val system = ActorSystem(Algorithm(), "example")
   system ! Algorithm.Command.Start(Path.of("../"))
