@@ -11,7 +11,7 @@ object NotificationListeners:
   enum Command:
     case NumberOfFilesChanged(numberOfFiles: Int)
     case TopNChanged(top: List[Statistic])
-    case DistributionChanged(distribution: Map[String, Int])
+    case DistributionChanged(distribution: Map[Range, Int])
 
   def apply(): Behavior[Command] =
     Behaviors.receiveMessage {
