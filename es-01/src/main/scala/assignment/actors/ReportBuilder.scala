@@ -10,13 +10,9 @@ case class ReportConfiguration(n: Int, nOfIntervals: Int, maxLines: Int)
 
 class Report(val reportConfiguration: ReportConfiguration):
   var configuration: ReportConfiguration = reportConfiguration
-
   var statistics: List[Statistic] = List.empty
-
   var topStatistics: List[Statistic] = List.empty
-
   var distribution: Map[Range, Int] = Map.empty
-
 
 object ReportBuilder:
   enum Command:
