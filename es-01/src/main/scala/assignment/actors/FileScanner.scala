@@ -17,8 +17,6 @@ object FileScanner:
     Behaviors.setup { context =>
       Behaviors.receiveMessage {
         case Scan(path, reportBuilder) =>
-          // Create the Statistic with file lines
-          // Use try with resources to close the file
           val statistic = Try {
             val source = Source.fromFile(path.toFile)
             val lines = source.getLines().toList.size

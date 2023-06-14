@@ -52,6 +52,7 @@ object ReportBuilder:
           notifyTo ! NotificationListeners.Command.NumberOfFilesChanged(report.statistics.size)
           Behaviors.same
         case Complete =>
+          println("Completed")
           Behaviors.stopped
       }
     }
