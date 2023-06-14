@@ -4,13 +4,12 @@ import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
 import assignment.Statistic
 
+case class Range(min: Int, max: Int)
 
-case class ReportConfiguration(n: Int,
-                               nOfIntervals: Int,
-                               maxLines: Int)
+case class ReportConfiguration(n: Int, nOfIntervals: Int, maxLines: Int)
 
 class Report(val reportConfiguration: ReportConfiguration):
-  var configuration = reportConfiguration
+  var configuration: ReportConfiguration = reportConfiguration
 
   var statistics: List[Statistic] = List.empty
 
@@ -34,18 +33,27 @@ object ReportBuilder:
 
         case AddStatistic(statistic) =>
           statisticsList = statisticsList :+ statistic
-          // check if report changed
+          // update topN
+
+          // check if topN is not full
           if (report.topStatistics.size < report.configuration.n) {
             this.insertTopSorted(report, statistic)
             replyTo ! NotificationListeners.Command.TopNChanged(report.topStatistics)
           }
+          // check if topN is full and the new statistic is bigger than the smallest
           else if (report.topStatistics.apply(report.configuration.n - 1).size < statistic.size) {
-            // drop last element
             report.topStatistics = report.topStatistics.dropRight(1)
             this.insertTopSorted(report, statistic)
             replyTo ! NotificationListeners.Command.TopNChanged(report.topStatistics)
           }
 
+          // update distribution
+          for range <- report.distribution.keys do
+            if (statistic.size >= range.min && statistic.size <= range.max) then
+              report.distribution = report.distribution.updated(range, report.distribution.apply(range) + 1)
+              replyTo ! NotificationListeners.Command.DistributionChanged(report.distribution)
+
+          replyTo ! NotificationListeners.Command.NumberOfFilesChanged(statisticsList.size)
           Behaviors.same
         case Complete =>
           Behaviors.stopped
