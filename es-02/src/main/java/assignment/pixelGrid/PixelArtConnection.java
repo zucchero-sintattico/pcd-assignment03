@@ -11,7 +11,6 @@ import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
 public class PixelArtConnection {
-    private static final String QUEUE_NAME = "Test";
     private Channel channel;
     private Connection connection;
     private int delayTicks = 0;
@@ -58,7 +57,7 @@ public class PixelArtConnection {
     private void defineNewPositionCallback(BrushManager brushManager) throws IOException {
         DeliverCallback newBrushPositionCallback = (consumerTag, delivery) -> {
             String message = new String(delivery.getBody(), "UTF-8");
-            System.out.println(" [x] Received B '" + message + "' by thread "+Thread.currentThread().getName());
+            System.out.println(" [x] Received POSITION '" + message);
             String[] parts = message.split(" ");
             // Message: brushId x y color
             UUID brushId = UUID.fromString(parts[0]);
@@ -78,7 +77,7 @@ public class PixelArtConnection {
     private void defineDisconnectCallback(BrushManager brushManager) throws IOException {
         DeliverCallback disconnectCallback = (consumerTag, delivery) -> {
             String message = new String(delivery.getBody(), "UTF-8");
-            System.out.println(" [x] Received D '" + message + "' by thread "+Thread.currentThread().getName());
+            System.out.println(" -DELETE '" + message + "' by thread "+Thread.currentThread().getName());
             String[] parts = message.split(" ");
             // Message: brushId
             UUID brushId = UUID.fromString(parts[0]);
@@ -91,7 +90,7 @@ public class PixelArtConnection {
         try {
             String message = id + " " + x + " " + y + " " + color;
             channel.basicPublish("", "NewColor", null, message.getBytes());
-            System.out.println(" [*] Sent '" + message + "'");
+            System.out.println(" [*] Seend COLOR '" + message + "'");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -105,7 +104,7 @@ public class PixelArtConnection {
 
                 String message = id + " " + x + " " + y;
                 channel.basicPublish("", "NewPosition", null, message.getBytes());
-                System.out.println(" [*] Sent '" + message + "'");
+                System.out.println(" [*] Sent POSITION '" + message + "'");
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -116,7 +115,7 @@ public class PixelArtConnection {
         try {
             String message = uuid.toString();
             channel.basicPublish("", "Disconnect", null, message.getBytes());
-            System.out.println(" [*] Sent '" + message + "'");
+            System.out.println(" [*] Sent DISCONNECT'" + message + "'");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

@@ -20,24 +20,27 @@ public class PixelArtNode {
 
     public void Start() throws IOException, TimeoutException {
         this.brushManager = new BrushManager();
-        this.localBrush = new BrushManager.Brush(0, 0, 0);
+        this.localBrush = new BrushManager.Brush(0, 0, randomColor());
+
         brushManager.addBrush(this.uuid, localBrush);
         PixelGridView view = setUpGrid();
-        this.connection.setUpConnection();
-        this.connection.defineCallbacks(this.grid, this.brushManager);
+        //this.connection.setUpConnection();
+        //this.connection.defineCallbacks(this.grid, this.brushManager);
 
         view.addMouseMovedListener((x, y) -> {
             localBrush.updatePosition(x, y);
-            this.connection.sendNewPositionToBroker(this.uuid, x, y);
+            //this.connection.sendNewPositionToBroker(this.uuid, x, y);
+            System.out.println(localBrush.getX() + " " + localBrush.getY());
             view.refresh();
         });
 
         view.addPixelGridEventListener((x, y) -> {
             grid.set(x, y, localBrush.getColor());
-            this.connection.sendNewColorToBroker(this.uuid, x, y, localBrush.getColor());
+            //this.connection.sendNewColorToBroker(this.uuid, x, y, localBrush.getColor());
             view.refresh();
         });
 
+        view.addColorChangedListener(localBrush::setColor);
         // add listener for closing the window
         view.addWindowClosedListener(() -> {
             try {
@@ -47,7 +50,7 @@ public class PixelArtNode {
                 e.printStackTrace();
             }
         });
-        view.addColorChangedListener(localBrush::setColor);
+        //view.addColorChangedListener(localBrush::setColor);
 
         view.display();
     }
@@ -58,7 +61,6 @@ public class PixelArtNode {
         for (int i = 0; i < 10; i++) {
             grid.set(rand.nextInt(40), rand.nextInt(40), randomColor());
         }
-        PixelGridView view = new PixelGridView(grid, brushManager, 800, 800);
-        return view;
+        return new PixelGridView(grid, brushManager, 800, 800);
     }
 }

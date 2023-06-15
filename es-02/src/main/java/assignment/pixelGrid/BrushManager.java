@@ -13,7 +13,7 @@ public class BrushManager {
 
 
     void draw(final Graphics2D g) {
-        brushes.forEach(brush -> {
+        brushMap.values().forEach(brush -> {
             g.setColor(new Color(brush.color));
             var circle = new java.awt.geom.Ellipse2D.Double(brush.x - BRUSH_SIZE / 2.0, brush.y - BRUSH_SIZE / 2.0, BRUSH_SIZE, BRUSH_SIZE);
             // draw the polygon
@@ -26,6 +26,7 @@ public class BrushManager {
 
     void addBrush(final UUID id, final Brush brush) {
         this.brushMap.put(id, brush);
+        //this.brushes.add(brush);
     }
 
     Map<UUID, Brush> getBrushMap() {
