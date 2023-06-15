@@ -23,6 +23,8 @@ object ReportBuilder:
     Behaviors.setup { context =>
       import Command.*
       val report = new Report(reportConfiguration)
+      // fill the distribution map
+      fillDistritionMap(report, reportConfiguration)
       Behaviors.receiveMessage {
         case AddStatistic(statistic) =>
           println("Received statistic: " + statistic)
@@ -60,3 +62,9 @@ object ReportBuilder:
     report.topStatistics = report.topStatistics :+ statistic
     report.topStatistics = report.topStatistics.sortBy(_.size)
   }
+
+  private def fillDistritionMap(report: Report, configuration: ReportConfiguration): Unit =
+    val rangeSize = configuration.maxLines / configuration.nOfIntervals
+    for i <- 0 until configuration.nOfIntervals do
+      val range = Range(i * rangeSize, (i + 1) * rangeSize)
+      report.distribution = report.distribution.updated(range, 0)
