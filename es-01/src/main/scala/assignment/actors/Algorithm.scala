@@ -51,7 +51,7 @@ object Algorithm:
           Behaviors.receiveSignal {
             case (_, Terminated(_)) =>
               println("ReportBuilder terminated")
-              Behaviors.same
+              idle()
           }
       }
 
