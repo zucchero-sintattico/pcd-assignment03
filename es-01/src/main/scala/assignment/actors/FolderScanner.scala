@@ -17,11 +17,11 @@ object FolderScanner:
   private def idle(): Behavior[Command] =
     import Command.*
     Behaviors.receiveMessage[Command] {
-      case Scan(path, reportBuilder) => started(path, reportBuilder)
+      case Scan(path, reportBuilder) => starting(path, reportBuilder)
       case Stop => Behaviors.same
     }
 
-  private def started(path: Path, reportBuilder: ActorRef[ReportBuilder.Command]): Behavior[Command] =
+  private def starting(path: Path, reportBuilder: ActorRef[ReportBuilder.Command]): Behavior[Command] =
     import Command.*
     Behaviors.setup { context =>
       var children = List.empty[ActorRef[_]]
@@ -48,18 +48,25 @@ object FolderScanner:
       if children.isEmpty then
         Behaviors.stopped
       else
-        Behaviors.receiveMessage[Command] {
-          case Scan(_, _) => Behaviors.same
-          case Stop =>
-            children.foreach(context.stop)
+        running(children)
+    }
+
+  private def running(children: List[ActorRef[_]]): Behavior[Command] =
+    import Command.*
+    Behaviors.setup { context =>
+      var actualChildren = children
+      Behaviors.receiveMessage[Command] {
+        case Scan(_, _) => Behaviors.same
+        case Stop =>
+          actualChildren.foreach(context.stop)
+          Behaviors.same
+      }.receiveSignal {
+        case (_, Terminated(ref)) =>
+          actualChildren = actualChildren.filterNot(_ == ref)
+          if children.isEmpty then
+            Behaviors.stopped
+          else
             Behaviors.same
-        }.receiveSignal {
-          case (_, Terminated(ref)) =>
-            children = children.filterNot(_ == ref)
-            if children.isEmpty then
-              Behaviors.stopped
-            else
-              Behaviors.same
-        }
+      }
     }
 
