@@ -1,6 +1,8 @@
 package assignment.pixelGrid;
 
+import java.io.IOException;
 import java.util.Random;
+import java.util.concurrent.TimeoutException;
 
 public class PixelArtMain {
 
@@ -9,7 +11,7 @@ public class PixelArtMain {
 		return rand.nextInt(256 * 256 * 256);
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException, TimeoutException {
 		var brushManager = new BrushManager();
 		var localBrush = new BrushManager.Brush(0, 0, randomColor());
 		var fooBrush = new BrushManager.Brush(0, 0, randomColor());

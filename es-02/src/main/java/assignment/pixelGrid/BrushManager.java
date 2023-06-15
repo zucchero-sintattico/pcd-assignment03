@@ -1,13 +1,31 @@
 package assignment.pixelGrid;
 
 
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
+
 import java.awt.*;
+import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 public class BrushManager {
     private static final int BRUSH_SIZE = 10;
     private static final int STROKE_SIZE = 2;
     private List<Brush> brushes = new java.util.ArrayList<>();
+
+    private static Channel channel;
+    private static Connection connection;
+
+
+    public BrushManager() throws IOException, TimeoutException {
+        ConnectionFactory factory = new ConnectionFactory();
+        factory.setHost("localhost");
+        this.connection = factory.newConnection();
+        this.channel = connection.createChannel();
+    }
+
 
     void draw(final Graphics2D g) {
         brushes.forEach(brush -> {
@@ -32,6 +50,7 @@ public class BrushManager {
     public static class Brush {
         private int x, y;
         private int color;
+        private int lag_counter;
 
         public Brush(final int x, final int y, final int color) {
             this.x = x;
@@ -40,6 +59,18 @@ public class BrushManager {
         }
 
         public void updatePosition(final int x, final int y) {
+            lag_counter++;
+            lag_counter %= 50;
+            try {
+                if (lag_counter == 0) {
+                    channel.queueDeclare("Positions", false, false, false, null);
+                    String message = "x = " + x + " y = " + y;
+                    channel.basicPublish("", "Positions", null, message.getBytes());
+                    System.out.println(" [*] Sent '" + message + "'");
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
             this.x = x;
             this.y = y;
         }
