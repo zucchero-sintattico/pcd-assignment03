@@ -16,7 +16,6 @@ public class PixelGridView extends JFrame {
     private final int w, h;
     private final List<PixelGridEventListener> pixelListeners;
 	private final List<MouseMovedListener> movedListener;
-
 	private final List<ColorChangeListener> colorChangeListeners;
     
     public PixelGridView(PixelGrid grid, BrushManager brushManager, int w, int h){
@@ -106,5 +105,15 @@ public class PixelGridView extends JFrame {
 				movedListener.forEach(l -> l.mouseMoved(e.getX(), e.getY()));
 			}
 		};
+	}
+
+	public void addWindowClosedListener(Runnable callback) {
+		this.addWindowListener(new java.awt.event.WindowAdapter() {
+			@Override
+			public void windowClosing(java.awt.event.WindowEvent windowEvent) {
+				System.out.println("Window closed");
+				System.exit(0);
+			}
+		});
 	}
 }

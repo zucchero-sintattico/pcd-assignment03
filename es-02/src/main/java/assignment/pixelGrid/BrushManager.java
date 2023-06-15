@@ -1,19 +1,15 @@
 package assignment.pixelGrid;
 
 
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.ConnectionFactory;
-
 import java.awt.*;
-import java.io.IOException;
+import java.util.*;
 import java.util.List;
-import java.util.concurrent.TimeoutException;
 
 public class BrushManager {
     private static final int BRUSH_SIZE = 10;
     private static final int STROKE_SIZE = 2;
     private List<Brush> brushes = new java.util.ArrayList<>();
+    private Map<UUID, Brush> brushMap = new HashMap<>();
 
 
     void draw(final Graphics2D g) {
@@ -28,18 +24,21 @@ public class BrushManager {
         });
     }
 
-    void addBrush(final Brush brush) {
-        brushes.add(brush);
+    void addBrush(final UUID id, final Brush brush) {
+        this.brushMap.put(id, brush);
     }
 
-    void removeBrush(final Brush brush) {
-        brushes.remove(brush);
+    Map<UUID, Brush> getBrushMap() {
+        return brushMap;
+    }
+
+    void removeBrush(final UUID id) {
+        this.brushMap.remove(id);
     }
 
     public static class Brush {
         private int x, y;
         private int color;
-        private int lag_counter;
 
         public Brush(final int x, final int y, final int color) {
             this.x = x;
@@ -48,7 +47,6 @@ public class BrushManager {
         }
 
         public void updatePosition(final int x, final int y) {
-
             this.x = x;
             this.y = y;
         }
@@ -65,5 +63,6 @@ public class BrushManager {
         public void setColor(int color){
             this.color = color;
         }
+
     }
 }

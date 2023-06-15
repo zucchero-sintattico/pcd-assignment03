@@ -1,11 +1,8 @@
 package assignment.pixelGrid;
 
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.ConnectionFactory;
-
 import java.io.IOException;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
 
@@ -14,6 +11,7 @@ public class PixelArtNode {
     private BrushManager.Brush localBrush;
     private PixelGrid grid;
     private PixelArtConnection connection = new PixelArtConnection();
+    private final UUID uuid = UUID.randomUUID();
 
     public static int randomColor() {
         Random rand = new Random();
@@ -22,23 +20,33 @@ public class PixelArtNode {
 
     public void Start() throws IOException, TimeoutException {
         this.brushManager = new BrushManager();
-        this.localBrush = new BrushManager.Brush(0, 0, randomColor());
-        brushManager.addBrush(localBrush);
+        this.localBrush = new BrushManager.Brush(0, 0, 0);
+        brushManager.addBrush(this.uuid, localBrush);
         PixelGridView view = setUpGrid();
         this.connection.setUpConnection();
+        this.connection.defineCallbacks(this.grid, this.brushManager);
 
         view.addMouseMovedListener((x, y) -> {
             localBrush.updatePosition(x, y);
-            this.connection.sendNewPositionToBroker(x, y);
+            this.connection.sendNewPositionToBroker(this.uuid, x, y);
             view.refresh();
         });
 
         view.addPixelGridEventListener((x, y) -> {
             grid.set(x, y, localBrush.getColor());
-            this.connection.sendNewColorToBroker(x, y, localBrush.getColor());
+            this.connection.sendNewColorToBroker(this.uuid, x, y, localBrush.getColor());
             view.refresh();
         });
 
+        // add listener for closing the window
+        view.addWindowClosedListener(() -> {
+            try {
+                this.connection.sendDisconnectMessageToBroker(this.uuid);
+                this.connection.closeConnection();
+            } catch (IOException | TimeoutException e) {
+                e.printStackTrace();
+            }
+        });
         view.addColorChangedListener(localBrush::setColor);
 
         view.display();
