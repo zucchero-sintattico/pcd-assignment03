@@ -1,9 +1,9 @@
 package assignment.mvc.view;
 
-import assignment.mvc.Statistic;
-import assignment.mvc.actors.Range;
+import assignment.Domain.*;
 import assignment.mvc.controller.AlgorithmStatus;
 import assignment.mvc.controller.Controller;
+import scala.collection.immutable.Range$;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -11,7 +11,6 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;

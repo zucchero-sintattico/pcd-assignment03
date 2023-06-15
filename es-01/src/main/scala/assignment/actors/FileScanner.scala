@@ -1,8 +1,9 @@
-package assignment.mvc.actors
+package assignment.actors
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
-import assignment.mvc.Statistic
+import assignment.Domain.Statistic
+import assignment.Domain._
 
 import java.nio.file.Path
 import scala.io.Source

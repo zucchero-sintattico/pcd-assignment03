@@ -1,11 +1,9 @@
 package assignment.mvc.view;
 
 
-import assignment.mvc.Statistic;
-import assignment.mvc.actors.Range;
+import assignment.Domain.*;
 import assignment.mvc.controller.AlgorithmStatus;
 import assignment.mvc.controller.Controller;
-
 import java.util.List;
 import java.util.Map;
 

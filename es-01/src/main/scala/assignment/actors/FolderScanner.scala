@@ -1,8 +1,7 @@
-package assignment.mvc.actors
+package assignment.actors
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior, Terminated}
-import assignment.mvc.Statistic
 
 import java.nio.file.Path
 import scala.math.Fractional.Implicits.infixFractionalOps
@@ -32,14 +31,14 @@ object FolderScanner:
         .filter(_.toString.endsWith(".java"))
 
       directories.foreach { directory =>
-        val child = context.spawn(FolderScanner(), s"folderScanner-${directory.getName}")
+        val child = context.spawn(FolderScanner(), s"folderScanner-${directory.getName.hashCode()}")
         children = children :+ child
         context.watch(child)
         child ! Scan(directory.toPath, reportBuilder)
       }
 
       files.foreach { file =>
-        val child = context.spawn(FileScanner(), s"fileScanner-${file.getName}")
+        val child = context.spawn(FileScanner(), s"fileScanner-${file.getName.hashCode()}")
         children = children :+ child
         context.watch(child)
         child ! FileScanner.Command.Scan(file.toPath, reportBuilder)
