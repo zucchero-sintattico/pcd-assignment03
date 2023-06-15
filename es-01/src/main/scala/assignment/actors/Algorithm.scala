@@ -15,16 +15,16 @@ object Algorithm:
 
   def apply(): Behavior[Command] = idle()
 
-  def idle(): Behavior[Command] =
+  private def idle(): Behavior[Command] =
     Behaviors.receiveMessage[Command] {
         case Start(path) => started(path)
         case Stop => Behaviors.same
     }
 
 
-  def started(path: Path): Behavior[Command] =
+  private def started(path: Path): Behavior[Command] =
+    import Command._
     Behaviors.setup { context =>
-      import Command._
       println("Algorithm switched to started state")
 
       val reportConfiguration = ReportConfiguration(10, 20, 30)

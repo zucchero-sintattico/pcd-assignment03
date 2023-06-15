@@ -14,17 +14,17 @@ object FolderScanner:
 
   def apply(): Behavior[Command] = idle()
 
-  def idle(): Behavior[Command] =
+  private def idle(): Behavior[Command] =
     import Command.*
     Behaviors.receiveMessage[Command] {
       case Scan(path, reportBuilder) => started(path, reportBuilder)
       case Stop => Behaviors.same
     }
 
-  def started(path: Path, reportBuilder: ActorRef[ReportBuilder.Command]): Behavior[Command] =
+  private def started(path: Path, reportBuilder: ActorRef[ReportBuilder.Command]): Behavior[Command] =
     import Command.*
     Behaviors.setup { context =>
-      var children = List.empty[ActorRef[Nothing]]
+      var children = List.empty[ActorRef[_]]
       val allFiles = path.toFile.listFiles().toList
       val directories = allFiles.filter(_.isDirectory)
       val files = allFiles
