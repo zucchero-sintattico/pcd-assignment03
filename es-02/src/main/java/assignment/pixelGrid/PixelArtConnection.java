@@ -21,17 +21,9 @@ public class PixelArtConnection {
         factory.setHost("localhost");
         this.connection = factory.newConnection();
         this.channel = connection.createChannel();
-        DeliverCallback deliverCallback1 = (consumerTag, delivery) -> {
-            String message = new String(delivery.getBody(), "UTF-8");
-            System.out.println(" [x] Received A '" + message + "' by thread "+Thread.currentThread().getName());
-            try {
-                Thread.sleep(1000);
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
-        };
-
-        channel.basicConsume(QUEUE_NAME, true, deliverCallback1, consumerTag -> {});
+        channel.queueDeclare("NewPosition", false, false, false, null);
+        channel.queueDeclare("NewColor", false, false, false, null);
+        channel.queueDeclare("Disconnect", false, false, false, null);
     }
 
     public void closeConnection() throws IOException, TimeoutException {
@@ -97,7 +89,6 @@ public class PixelArtConnection {
 
     public void sendNewColorToBroker(UUID id, int x, int y, int color) {
         try {
-            channel.queueDeclare("NewColor", false, false, false, null);
             String message = id + " " + x + " " + y + " " + color;
             channel.basicPublish("", "NewColor", null, message.getBytes());
             System.out.println(" [*] Sent '" + message + "'");
@@ -111,9 +102,9 @@ public class PixelArtConnection {
         delayTicks %= 50;
         try {
             if (delayTicks == 0) {
-                channel.queueDeclare("NewPositions", false, false, false, null);
+
                 String message = id + " " + x + " " + y;
-                channel.basicPublish("", "NewPositions", null, message.getBytes());
+                channel.basicPublish("", "NewPosition", null, message.getBytes());
                 System.out.println(" [*] Sent '" + message + "'");
             }
         } catch (IOException e) {
@@ -123,7 +114,6 @@ public class PixelArtConnection {
 
     public void sendDisconnectMessageToBroker(UUID uuid) {
         try {
-            channel.queueDeclare("Disconnect", false, false, false, null);
             String message = uuid.toString();
             channel.basicPublish("", "Disconnect", null, message.getBytes());
             System.out.println(" [*] Sent '" + message + "'");
