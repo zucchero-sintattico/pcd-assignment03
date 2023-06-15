@@ -1,10 +1,9 @@
-package assignment.view;
+package assignment.mvc.view;
 
-import assignment.Statistic;
-import assignment.actors.Range;
-import assignment.controller.AlgorithmStatus;
-import assignment.controller.AnalyzerType;
-import assignment.controller.Controller;
+import assignment.mvc.Statistic;
+import assignment.mvc.actors.Range;
+import assignment.mvc.controller.AlgorithmStatus;
+import assignment.mvc.controller.Controller;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -34,7 +33,6 @@ public class ViewImpl extends JFrame implements View {
     private Controller controller;
     private Path selectedPath;
     private AlgorithmStatus status = AlgorithmStatus.IDLE;
-    private AnalyzerType analyzerType = AnalyzerType.TASK;
 
     public ViewImpl() {
         super("My View");
@@ -117,7 +115,6 @@ public class ViewImpl extends JFrame implements View {
         final JLabel nOfRangesLabel = new JLabel("Number of ranges:");
         final JLabel maxLinesLabel = new JLabel("Max number of lines:");
         final JLabel topNLabel = new JLabel("Top N files number:");
-        final JLabel ImplementationLabel = new JLabel("Implementation:");
         final JLabel filePathLabel = new JLabel("File path:");
         final JButton filePathButton = new JButton("Browse");
         filePathButton.addActionListener(e -> {
@@ -128,17 +125,7 @@ public class ViewImpl extends JFrame implements View {
             selectedPath = fileChooser.getSelectedFile().toPath();
             filePathLabel.setText("File path: " + selectedPath);
         });
-        List<String> choices = Arrays.stream(AnalyzerType.values())
-                .map(Enum::toString)
-                .map(String::toLowerCase)
-                .toList();
-        JComboBox<String> ImplementationBox = new JComboBox<>(choices.toArray(new String[0]));
-        ImplementationBox.addActionListener(e -> {
-            JComboBox cb = (JComboBox) e.getSource();
-            AnalyzerType choice = AnalyzerType.valueOf(cb.getSelectedItem().toString().toUpperCase());
-            analyzerType = choice;
-            System.out.println(choice);
-        });
+
         preferencesPanel.add(filePathLabel);
         preferencesPanel.add(filePathButton);
         preferencesPanel.add(nOfRangesLabel);
@@ -147,8 +134,6 @@ public class ViewImpl extends JFrame implements View {
         preferencesPanel.add(maxLinesText);
         preferencesPanel.add(topNLabel);
         preferencesPanel.add(topNText);
-        preferencesPanel.add(ImplementationLabel);
-        preferencesPanel.add(ImplementationBox);
     }
 
     @Override

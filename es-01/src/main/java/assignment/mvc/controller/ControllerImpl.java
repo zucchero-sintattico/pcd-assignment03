@@ -1,7 +1,9 @@
-package assignment.controller;
+package assignment.mvc.controller;
 
-import assignment.actors.ReportConfiguration;
-import assignment.view.View;
+import assignment.mvc.actors.ReportConfiguration;
+import assignment.mvc.actors.ReportConfiguration;
+import assignment.mvc.view.View;
+import assignment.mvc.view.View;
 
 import java.nio.file.Path;
 

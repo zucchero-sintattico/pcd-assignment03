@@ -1,15 +1,17 @@
-package assignment.actors
+package assignment.mvc.actors
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import assignment.Statistic
+import assignment.mvc.{Statistic, actors}
+
+import scala.collection.immutable.Range
 
 object NotificationListeners:
 
   enum Command:
     case NumberOfFilesChanged(numberOfFiles: Int)
     case TopNChanged(top: List[Statistic])
-    case DistributionChanged(distribution: Map[Range, Int])
+    case DistributionChanged(distribution: Map[actors.Range, Int])
 
   def apply(): Behavior[Command] =
     Behaviors.receiveMessage {

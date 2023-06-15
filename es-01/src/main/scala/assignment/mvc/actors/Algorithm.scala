@@ -1,10 +1,10 @@
-package assignment.actors
+package assignment.mvc.actors
 
 import Algorithm.Command
 import Algorithm.Command.{Start, Stop}
 import akka.actor.typed.{ActorRef, Behavior, Terminated}
 import akka.actor.typed.scaladsl.Behaviors
-import assignment.Statistic
+import assignment.mvc.Statistic
 
 import java.nio.file.Path
 

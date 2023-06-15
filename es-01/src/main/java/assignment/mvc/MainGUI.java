@@ -1,10 +1,12 @@
-package assignment;
+package assignment.mvc;
 
 
-import assignment.controller.Controller;
-import assignment.controller.ControllerImpl;
-import assignment.view.View;
-import assignment.view.ViewImpl;
+import assignment.mvc.controller.Controller;
+import assignment.mvc.controller.ControllerImpl;
+import assignment.mvc.view.View;
+import assignment.mvc.view.ViewImpl;
+import assignment.mvc.view.View;
+import assignment.mvc.view.ViewImpl;
 
 public class MainGUI {
     static public void main(String[] args) {

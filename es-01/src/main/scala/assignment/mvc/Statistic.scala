@@ -1,4 +1,4 @@
-package assignment
+package assignment.mvc
 
 import java.nio.file.Path
 

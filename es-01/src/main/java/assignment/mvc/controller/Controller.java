@@ -1,6 +1,7 @@
-package assignment.controller;
+package assignment.mvc.controller;
 
-import assignment.view.View;
+import assignment.mvc.view.View;
+import assignment.mvc.view.View;
 
 import java.nio.file.Path;
 
