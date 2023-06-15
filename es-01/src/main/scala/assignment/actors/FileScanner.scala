@@ -11,22 +11,20 @@ import scala.util.Try
 
 object FileScanner:
   enum Command:
-    case Scan(path: Path, replyTo: ActorRef[ReportBuilder.Command])
+    case Scan(path: Path, algorithm: ActorRef[Algorithm.Command])
 
   def apply(): Behavior[Command] =
     import Command.*
     Behaviors.setup { context =>
       Behaviors.receiveMessage {
         case Scan(path, reportBuilder) =>
-          println(s"Scanning file: $path")
           val statistic = Try {
             val source = Source.fromFile(path.toFile)
             val lines = source.getLines().toList.size
             source.close()
             Statistic(path, lines)
           }.getOrElse(Statistic(path, 0))
-          println(s"Scanned file: $path")
-          reportBuilder ! ReportBuilder.Command.AddStatistic(statistic)
+          reportBuilder ! Algorithm.Command.FileStatistic(statistic)
           Behaviors.stopped
       }
     }

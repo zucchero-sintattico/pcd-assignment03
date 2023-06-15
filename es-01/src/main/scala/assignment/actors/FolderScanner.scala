@@ -8,7 +8,7 @@ import scala.math.Fractional.Implicits.infixFractionalOps
 
 object FolderScanner:
   enum Command:
-    case Scan(path: Path, reportBuilder: ActorRef[ReportBuilder.Command])
+    case Scan(path: Path, algorithm: ActorRef[Algorithm.Command])
     case Stop
 
   def apply(): Behavior[Command] = idle()
@@ -16,56 +16,54 @@ object FolderScanner:
   private def idle(): Behavior[Command] =
     import Command.*
     Behaviors.receiveMessage[Command] {
-      case Scan(path, reportBuilder) => starting(path, reportBuilder)
-      case Stop => Behaviors.same
+      case Scan(path, algorithm) => starting(path, algorithm)
+      case Stop => Behaviors.stopped
     }
 
-  private def starting(path: Path, reportBuilder: ActorRef[ReportBuilder.Command]): Behavior[Command] =
+  private def starting(path: Path, algorithm: ActorRef[Algorithm.Command]): Behavior[Command] =
     import Command.*
     Behaviors.setup { context =>
       var children = List.empty[ActorRef[_]]
       val allFiles = path.toFile.listFiles().toList
-      val directories = allFiles.filter(_.isDirectory)
+      val directories = allFiles
+        .filter(_.isDirectory)
+        .filterNot(_.getName.startsWith(".")) // ignore hidden directories
+
       val files = allFiles
         .filterNot(_.isDirectory)
         .filter(_.toString.endsWith(".java"))
 
       directories.foreach { directory =>
-        val child = context.spawn(FolderScanner(), s"folderScanner-${directory.getName.hashCode()}")
+        val child = context.spawn(FolderScanner(), s"folderScanner-${directory.getName.hashCode}")
         children = children :+ child
         context.watch(child)
-        child ! Scan(directory.toPath, reportBuilder)
+        child ! Scan(directory.toPath, algorithm)
       }
 
       files.foreach { file =>
         val child = context.spawn(FileScanner(), s"fileScanner-${file.getName.hashCode()}")
         children = children :+ child
         context.watch(child)
-        child ! FileScanner.Command.Scan(file.toPath, reportBuilder)
+        child ! FileScanner.Command.Scan(file.toPath, algorithm)
       }
 
       if children.isEmpty then
         Behaviors.stopped
       else
-        running(children)
+        Behaviors.receiveMessage[Command] {
+          case Scan(_, _) => Behaviors.same
+          case Stop =>
+            children.foreach(context.stop)
+            Behaviors.stopped
+        }.receiveSignal {
+          case (_, Terminated(ref)) =>
+            children = children.filterNot(_ == ref)
+            if children.isEmpty then
+              println("All children stopped, stopping myself")
+              Behaviors.stopped
+            else
+              Behaviors.same
+        }
     }
 
-  private def running(children: List[ActorRef[_]]): Behavior[Command] =
-    import Command.*
-    Behaviors.setup { context =>
-      var actualChildren = children
-      Behaviors.receiveMessage[Command] {
-        case Scan(_, _) => Behaviors.same
-        case Stop =>
-          actualChildren.foreach(context.stop)
-          Behaviors.same
-      }.receiveSignal {
-        case (_, Terminated(ref)) =>
-          actualChildren = actualChildren.filterNot(_ == ref)
-          if children.isEmpty then
-            Behaviors.stopped
-          else
-            Behaviors.same
-      }
-    }
 
