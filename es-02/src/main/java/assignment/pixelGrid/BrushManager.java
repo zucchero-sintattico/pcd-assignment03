@@ -15,17 +15,6 @@ public class BrushManager {
     private static final int STROKE_SIZE = 2;
     private List<Brush> brushes = new java.util.ArrayList<>();
 
-    private static Channel channel;
-    private static Connection connection;
-
-
-    public BrushManager() throws IOException, TimeoutException {
-        ConnectionFactory factory = new ConnectionFactory();
-        factory.setHost("localhost");
-        this.connection = factory.newConnection();
-        this.channel = connection.createChannel();
-    }
-
 
     void draw(final Graphics2D g) {
         brushes.forEach(brush -> {
@@ -59,18 +48,7 @@ public class BrushManager {
         }
 
         public void updatePosition(final int x, final int y) {
-            lag_counter++;
-            lag_counter %= 50;
-            try {
-                if (lag_counter == 0) {
-                    channel.queueDeclare("Positions", false, false, false, null);
-                    String message = "x = " + x + " y = " + y;
-                    channel.basicPublish("", "Positions", null, message.getBytes());
-                    System.out.println(" [*] Sent '" + message + "'");
-                }
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+
             this.x = x;
             this.y = y;
         }
