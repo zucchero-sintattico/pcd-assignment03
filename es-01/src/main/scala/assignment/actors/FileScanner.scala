@@ -12,11 +12,13 @@ import scala.util.Try
 object FileScanner:
   enum Command:
     case Scan(path: Path, algorithm: ActorRef[Algorithm.Command])
+    case Stop
 
   def apply(): Behavior[Command] =
     import Command.*
     Behaviors.setup { context =>
       Behaviors.receiveMessage {
+        case Stop => Behaviors.stopped
         case Scan(path, reportBuilder) =>
           val statistic = Try {
             val source = Source.fromFile(path.toFile)

@@ -23,7 +23,9 @@ object FolderScanner:
   private def starting(path: Path, algorithm: ActorRef[Algorithm.Command]): Behavior[Command] =
     import Command.*
     Behaviors.setup { context =>
-      var children = List.empty[ActorRef[_]]
+      var folderScanners = List.empty[ActorRef[FolderScanner.Command]]
+      var fileScanners = List.empty[ActorRef[FileScanner.Command]]
+
       val allFiles = path.toFile.listFiles().toList
       val directories = allFiles
         .filter(_.isDirectory)
@@ -35,31 +37,34 @@ object FolderScanner:
 
       directories.foreach { directory =>
         val child = context.spawn(FolderScanner(), s"folderScanner-${directory.getName.hashCode}")
-        children = children :+ child
+        folderScanners = folderScanners :+ child
         context.watch(child)
         child ! Scan(directory.toPath, algorithm)
       }
 
       files.foreach { file =>
         val child = context.spawn(FileScanner(), s"fileScanner-${file.getName.hashCode()}")
-        children = children :+ child
+        fileScanners = fileScanners :+ child
         context.watch(child)
         child ! FileScanner.Command.Scan(file.toPath, algorithm)
       }
 
-      if children.isEmpty then
+      if folderScanners.isEmpty && fileScanners.isEmpty then
         Behaviors.stopped
       else
         Behaviors.receiveMessage[Command] {
-          case Scan(_, _) => Behaviors.same
           case Stop =>
-            children.foreach(context.stop)
-            Behaviors.stopped
+            folderScanners.foreach(_ ! Stop)
+            fileScanners.foreach(_ ! FileScanner.Command.Stop)
+            Behaviors.same
+          case _ => Behaviors.same
         }.receiveSignal {
-          case (_, Terminated(ref)) =>
-            children = children.filterNot(_ == ref)
-            if children.isEmpty then
-              println("All children stopped, stopping myself")
+          case (_, Terminated(ref: ActorRef[_])) =>
+            if ref.isInstanceOf[FolderScanner.Command] then
+              folderScanners = folderScanners.filterNot(_ == ref)
+            else
+              fileScanners = fileScanners.filterNot(_ == ref)
+            if folderScanners.isEmpty && fileScanners.isEmpty then
               Behaviors.stopped
             else
               Behaviors.same

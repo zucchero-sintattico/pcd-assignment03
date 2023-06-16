@@ -49,7 +49,7 @@ object ReportBuilder:
 
   private def insertTopSorted(report: Report, statistic: Statistic): Unit = {
     report.topStatistics = report.topStatistics :+ statistic
-    report.topStatistics = report.topStatistics.sortBy(_.size)
+    report.topStatistics = report.topStatistics.sortBy(_.size).reverse
   }
 
   private def fillDistributionMap(report: Report, configuration: ReportConfiguration): Unit =

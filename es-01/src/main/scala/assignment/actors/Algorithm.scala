@@ -63,16 +63,9 @@ object Algorithm:
       }.receiveSignal {
         case (_, Terminated(_)) =>
           println("FolderScanner terminated")
-          context.watch(reportBuilder)
           reportBuilder ! ReportBuilder.Command.Complete
-          Behaviors.receiveSignal {
-            case (_, Terminated(_)) =>
-              println("ReportBuilder terminated")
-              context.stop(notificationListener)
-              context.stop(reportBuilder)
-              context.stop(folderScanner)
-              idle()
-          }
+          notificationListener ! ViewNotificationListeners.Command.Stop
+          idle()
       }
 
     }

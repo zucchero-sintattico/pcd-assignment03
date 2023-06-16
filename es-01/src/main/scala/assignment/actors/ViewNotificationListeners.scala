@@ -13,21 +13,23 @@ object ViewNotificationListeners:
     case NumberOfFilesChanged(numberOfFiles: Int)
     case TopNChanged(top: List[Statistic])
     case DistributionChanged(distribution: Map[Range, Int])
+    case Stop
 
   def apply(view: View): Behavior[Command] =
+    import Command._
     Behaviors.receiveMessage {
-      case Command.NumberOfFilesChanged(numberOfFiles) =>
+      case Stop => Behaviors.stopped
+      case NumberOfFilesChanged(numberOfFiles) =>
         view.updateNumberOfFiles(numberOfFiles)
         Behaviors.same
-      case Command.TopNChanged(top) =>
+      case TopNChanged(top) =>
         import scala.jdk.CollectionConverters.SeqHasAsJava
         val javaList: java.util.List[Statistic] = top.asJava
         view.updateTopN(javaList)
         Behaviors.same
-      case Command.DistributionChanged(distribution) =>
-        import collection.JavaConverters.mapAsJavaMapConverter
+      case DistributionChanged(distribution) =>
+        import scala.jdk.CollectionConverters.MapHasAsJava
         val javaMap: java.util.Map[Range, Integer] = distribution.asJava.asInstanceOf[java.util.Map[Range, Integer]]
         view.updateDistribution(javaMap)
-
         Behaviors.same
     }
