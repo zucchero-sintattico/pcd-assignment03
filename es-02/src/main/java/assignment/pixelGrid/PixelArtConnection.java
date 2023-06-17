@@ -5,7 +5,6 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.DeliverCallback;
 
-import javax.swing.text.html.Option;
 import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
@@ -20,6 +19,12 @@ public class PixelArtConnection {
     private Channel channel;
     private Connection connection;
     private int delayTicks = 0;
+
+    private PixelArtNode node;
+
+    public PixelArtConnection(PixelArtNode node) throws IOException, TimeoutException {
+        this.node = node;
+    }
 
     public void setUpConnection() throws IOException, TimeoutException {
         ConnectionFactory factory = new ConnectionFactory();
@@ -46,22 +51,24 @@ public class PixelArtConnection {
         this.connection.close();
     }
 
-    public void defineCallbacks(PixelGrid grid, BrushManager brushManager) throws IOException {
-        this.defineNewPositionCallback(brushManager);
-        this.defineNewColorCallback(grid);
-        this.defineDisconnectCallback(brushManager);
+    public void defineCallbacks() throws IOException {
+        this.defineNewPositionCallback(this.node.getBrushManager());
+        this.defineNewColorCallback(this.node.getGrid(), this.node.getView());
+        this.defineDisconnectCallback(this.node.getBrushManager());
     }
 
 
-    private void defineNewColorCallback(PixelGrid grid) {
+    private void defineNewColorCallback(PixelGrid grid, PixelGridView view) {
         DeliverCallback newColorCallback = (consumerTag, delivery) -> {
             String message = new String(delivery.getBody(), "UTF-8");
-            System.out.println(" [x] Received C '" + message + "' by thread "+Thread.currentThread().getName());
+            System.out.println(" [x] Received C '" + message);
             String[] parts = message.split(" ");
             int x = Integer.parseInt(parts[1]);
             int y = Integer.parseInt(parts[2]);
             int color = Integer.parseInt(parts[3]);
             grid.set(x, y, color);
+            System.out.println("New-Color: "+grid.get(x, y));
+            view.refresh();
         };
         try {
             this.channel.basicConsume(this.newColorQueueName, true, newColorCallback, consumerTag -> {});
@@ -73,27 +80,30 @@ public class PixelArtConnection {
     private void defineNewPositionCallback(BrushManager brushManager) throws IOException {
         DeliverCallback newBrushPositionCallback = (consumerTag, delivery) -> {
             String message = new String(delivery.getBody(), "UTF-8");
-            System.out.println(" [x] Received POSITION '" + message);
-
+            //System.out.println(" [x] Received POSITION '" + message);
             String[] parts = message.split(" ");
             // Message: brushId x y color
             UUID brushId = UUID.fromString(parts[0]);
             int newX = Integer.parseInt(parts[1]);
             int newY = Integer.parseInt(parts[2]);
+            int newColor = Integer.parseInt(parts[3]);
             var brush = brushManager.getBrushMap().keySet().stream().filter(b -> b.equals(brushId)).findFirst();
-            brush.ifPresentOrElse(b -> brushManager.getBrushMap().get(brushId).updatePosition(newX, newY),
-                    () -> {
-                    var newBrush = new BrushManager.Brush(newX, newY, 0);
-                    brushManager.getBrushMap().put(brushId, newBrush);
-            });
+            brush.ifPresentOrElse(b -> {
+                                        brushManager.getBrushMap().get(brushId).updatePosition(newX, newY);
+                                        brushManager.getBrushMap().get(brushId).setColor(newColor);
+                    },
+                    () -> { var newBrush = new BrushManager.Brush(newX, newY, newColor);
+                            brushManager.getBrushMap().put(brushId, newBrush);
+                    });
         };
+
         this.channel.basicConsume(this.newPositionQueueName, true, newBrushPositionCallback, consumerTag -> {});
     }
 
     private void defineDisconnectCallback(BrushManager brushManager) throws IOException {
         DeliverCallback disconnectCallback = (consumerTag, delivery) -> {
             String message = new String(delivery.getBody(), "UTF-8");
-            System.out.println(" -Disconnected '" + message + "' by thread "+Thread.currentThread().getName());
+            System.out.println(" -Disconnected '" + message);
             String[] parts = message.split(" ");
             // Message: brushId
             UUID brushId = UUID.fromString(parts[0]);
@@ -112,12 +122,12 @@ public class PixelArtConnection {
         }
     }
 
-    public void sendNewPositionToBroker(UUID id, int x, int y) {
+    public void sendNewPositionToBroker(UUID id, int x, int y, int color) {
         delayTicks++;
         delayTicks %= 50;
         try {
             if (delayTicks == 0) {
-                String message = id + " " + x + " " + y;
+                String message = id + " " + x + " " + y + " " + color;
                 channel.basicPublish(NEW_POSITION_EXCHANGE_NAME, this.newPositionQueueName, null, message.getBytes("UTF-8"));
                 System.out.println(" [*] Sent POSITION '" + message + "'");
             }

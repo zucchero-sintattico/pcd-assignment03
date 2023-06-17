@@ -10,10 +10,26 @@ public class PixelArtNode {
     private BrushManager brushManager;
     private BrushManager.Brush localBrush;
     private PixelGrid grid;
-    private final PixelArtConnection connection = new PixelArtConnection();
+
+    private final PixelArtConnection connection = new PixelArtConnection(this);
     private final UUID uuid = UUID.randomUUID();
     private final StartMenuView startMenuView = new StartMenuView();
     private PixelGridView gridView;
+
+    public PixelArtNode() throws IOException, TimeoutException {
+    }
+
+
+    public PixelGrid getGrid(){
+        return this.grid;
+    }
+    public PixelGridView getView(){
+        return this.gridView;
+    }
+
+    public BrushManager getBrushManager() {
+        return brushManager;
+    }
 
     public static int randomColor() {
         Random rand = new Random();
@@ -26,7 +42,7 @@ public class PixelArtNode {
         this.brushManager.addBrush(this.uuid, localBrush);
         this.gridView = setUpGrid();
         this.connection.setUpConnection();
-        this.connection.defineCallbacks(this.grid, this.brushManager);
+        this.connection.defineCallbacks();
         this.setUpGridViewListeners();
         gridView.display();
     }
@@ -34,15 +50,17 @@ public class PixelArtNode {
     private void setUpGridViewListeners() {
         gridView.addMouseMovedListener((x, y) -> {
             localBrush.updatePosition(x, y);
-            this.connection.sendNewPositionToBroker(this.uuid, x, y);
+            this.connection.sendNewPositionToBroker(this.uuid, x, y, localBrush.getColor());
            // System.out.println(localBrush.getX() + " " + localBrush.getY());
             gridView.refresh();
         });
 
         gridView.addPixelGridEventListener((x, y) -> {
             grid.set(x, y, localBrush.getColor());
+            System.out.println("---> sending color to broker");
             this.connection.sendNewColorToBroker(this.uuid, x, y, localBrush.getColor());
             gridView.refresh();
+            System.out.println("---> done");
         });
 
         gridView.addColorChangedListener((int color) -> {

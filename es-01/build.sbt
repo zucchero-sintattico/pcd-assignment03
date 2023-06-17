@@ -7,6 +7,9 @@ lazy val root = (project in file("."))
     name := "es-01"
   )
 
+// Add java support
+
+
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-actor-typed" % "2.8.0",
 

@@ -2,71 +2,70 @@ package assignment.actors
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior, Terminated}
-import assignment.Statistic
+import assignment.Domain.Statistic
 
+import java.io.File
 import java.nio.file.Path
 import scala.math.Fractional.Implicits.infixFractionalOps
+import assignment.actors.Algorithm
 
 object FolderScanner:
   enum Command:
-    case Scan(path: Path, reportBuilder: ActorRef[ReportBuilder.Command])
-    case Stop
+    private[FolderScanner] case NewFolder(folder: File)
+    private[FolderScanner] case NewFile(file: File)
+    private[FolderScanner] case FileScannerTerminated
+    private[FolderScanner] case FolderScannerTerminated
 
-  def apply(): Behavior[Command] = idle()
+  import Command.*
 
-  private def idle(): Behavior[Command] =
-    import Command.*
-    Behaviors.receiveMessage[Command] {
-      case Scan(path, reportBuilder) => starting(path, reportBuilder)
-      case Stop => Behaviors.same
-    }
-
-  private def starting(path: Path, reportBuilder: ActorRef[ReportBuilder.Command]): Behavior[Command] =
-    import Command.*
+  def apply(path: Path, algorithm: ActorRef[Algorithm.Command]): Behavior[Command] =
     Behaviors.setup { context =>
-      var children = List.empty[ActorRef[_]]
-      val allFiles = path.toFile.listFiles().toList
-      val directories = allFiles.filter(_.isDirectory)
-      val files = allFiles
-        .filterNot(_.isDirectory)
-        .filter(_.toString.endsWith(".java"))
 
-      directories.foreach { directory =>
-        val child = context.spawn(FolderScanner(), s"folderScanner-${directory.getName}")
-        children = children :+ child
-        context.watch(child)
-        child ! Scan(directory.toPath, reportBuilder)
-      }
+      var directories = getDirectories(path)
+      var files = getFiles(path)
 
-      files.foreach { file =>
-        val child = context.spawn(FileScanner(), s"fileScanner-${file.getName}")
-        children = children :+ child
-        context.watch(child)
-        child ! FileScanner.Command.Scan(file.toPath, reportBuilder)
-      }
+      directories.foreach(context.self ! NewFolder(_))
+      files.foreach(context.self ! NewFile(_))
 
-      if children.isEmpty then
+      if directories.isEmpty && files.isEmpty then
         Behaviors.stopped
       else
-        running(children)
+        Behaviors.receiveMessage {
+          case NewFolder(folder) =>
+            val folderScanner = context.spawn(FolderScanner(folder.toPath, algorithm), folder.getName.hashCode.toString)
+            context.watchWith(folderScanner, FolderScannerTerminated)
+            Behaviors.same
+          case NewFile(file) =>
+            val fileScanner = context.spawn(FileScanner(file.toPath, algorithm), file.getName.hashCode.toString)
+            context.watchWith(fileScanner, FileScannerTerminated)
+            Behaviors.same
+          case FileScannerTerminated =>
+            files = files.tail
+            if files.isEmpty && directories.isEmpty then
+              Behaviors.stopped
+            else
+              Behaviors.same
+          case FolderScannerTerminated =>
+            directories = directories.tail
+            if files.isEmpty && directories.isEmpty then
+              Behaviors.stopped
+            else
+              Behaviors.same
+        }
     }
 
-  private def running(children: List[ActorRef[_]]): Behavior[Command] =
-    import Command.*
-    Behaviors.setup { context =>
-      var actualChildren = children
-      Behaviors.receiveMessage[Command] {
-        case Scan(_, _) => Behaviors.same
-        case Stop =>
-          actualChildren.foreach(context.stop)
-          Behaviors.same
-      }.receiveSignal {
-        case (_, Terminated(ref)) =>
-          actualChildren = actualChildren.filterNot(_ == ref)
-          if children.isEmpty then
-            Behaviors.stopped
-          else
-            Behaviors.same
-      }
-    }
+  private def getDirectories(path: Path): Seq[File] =
+    path.toFile.listFiles()
+      .filter(_.isDirectory)
+      .filterNot(_.getName.startsWith("."))
+      .toSeq
+
+  private def getFiles(path: Path): Seq[File] =
+    path.toFile.listFiles()
+      .filterNot(_.isDirectory)
+      .filter(_.toString.endsWith(".java"))
+      .toSeq
+
+
+
 
