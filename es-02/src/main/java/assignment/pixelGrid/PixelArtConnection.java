@@ -19,7 +19,6 @@ public class PixelArtConnection {
     private Channel channel;
     private Connection connection;
     private int delayTicks = 0;
-
     private final PixelArtNode node;
 
     public PixelArtConnection(PixelArtNode node) {
@@ -55,6 +54,10 @@ public class PixelArtConnection {
         this.channel.close();
         this.connection.close();
     }
+
+    /*
+    *  Subscriber Methods
+     */
 
     public void defineCallbacks() throws IOException {
         this.defineNewBrushPositionCallback(this.node.getBrushManager());
@@ -117,6 +120,9 @@ public class PixelArtConnection {
         this.channel.basicConsume(this.disconnectQueueName, true, disconnectCallback, consumerTag -> {});
     }
 
+    /*
+        * Publisher methods
+     */
     public void sendPixelUpdateToBroker(UUID id, int x, int y, int color) {
         try {
             String message = id + " " + x + " " + y + " " + color;
