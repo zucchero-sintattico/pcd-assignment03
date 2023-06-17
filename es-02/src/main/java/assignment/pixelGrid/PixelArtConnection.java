@@ -115,7 +115,7 @@ public class PixelArtConnection {
     public void sendNewColorToBroker(UUID id, int x, int y, int color) {
         try {
             String message = id + " " + x + " " + y + " " + color;
-            channel.basicPublish(NEW_COLOR_EXCHANGE_NAME, this.newColorQueueName, null, message.getBytes("UTF-8"));
+            channel.basicPublish(NEW_COLOR_EXCHANGE_NAME, "", null, message.getBytes("UTF-8"));
             System.out.println(" [*] Sent COLOR '" + message + "'");
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -128,7 +128,7 @@ public class PixelArtConnection {
         try {
             if (delayTicks == 0) {
                 String message = id + " " + x + " " + y + " " + color;
-                channel.basicPublish(NEW_POSITION_EXCHANGE_NAME, this.newPositionQueueName, null, message.getBytes("UTF-8"));
+                channel.basicPublish(NEW_POSITION_EXCHANGE_NAME, "", null, message.getBytes("UTF-8"));
                 System.out.println(" [*] Sent POSITION '" + message + "'");
             }
         } catch (IOException e) {
@@ -139,7 +139,7 @@ public class PixelArtConnection {
     public void sendDisconnectMessageToBroker(UUID uuid) {
         try {
             String message = uuid.toString();
-            channel.basicPublish(DISCONNECT_EXCHANGE_NAME, this.disconnectQueueName, null, message.getBytes("UTF-8"));
+            channel.basicPublish(DISCONNECT_EXCHANGE_NAME, "", null, message.getBytes("UTF-8"));
             System.out.println(" [*] Sent DISCONNECT'" + message + "'");
         } catch (IOException e) {
             throw new RuntimeException(e);
