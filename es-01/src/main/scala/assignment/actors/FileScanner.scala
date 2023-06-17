@@ -9,24 +9,23 @@ import java.nio.file.Path
 import scala.io.Source
 import scala.util.Try
 
-object FileScanner:
-  enum Command:
-    case Scan(path: Path, algorithm: ActorRef[Algorithm.Command])
-    case Stop
+import assignment.actors.Algorithm
 
-  def apply(): Behavior[Command] =
-    import Command.*
+object FileScanner:
+
+
+  def apply(path: Path, algorithm: ActorRef[Algorithm.Command]): Behavior[Nothing] =
+    println(s"FileScanner: ${path.getFileName}")
     Behaviors.setup { context =>
-      Behaviors.receiveMessage {
-        case Stop => Behaviors.stopped
-        case Scan(path, algorithm) =>
-          val statistic = Try {
-            val source = Source.fromFile(path.toFile)
-            val lines = source.getLines().toList.size
-            source.close()
-            Statistic(path, lines)
-          }.getOrElse(Statistic(path, 0))
-          algorithm ! Algorithm.Command.FileStatistic(statistic)
-          Behaviors.stopped
-      }
+      val statistic = getStatistic(path)
+      algorithm ! Algorithm.Command.FileStatistic(statistic)
+      Behaviors.stopped
     }
+
+  private def getStatistic(path: Path): Statistic =
+    Try {
+      val source = Source.fromFile(path.toFile)
+      val lines = source.getLines().toList.size
+      source.close()
+      Statistic(path, lines)
+    }.getOrElse(Statistic(path, 0))

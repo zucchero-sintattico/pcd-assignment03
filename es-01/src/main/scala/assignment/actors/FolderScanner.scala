@@ -3,50 +3,33 @@ package assignment.actors
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior, Terminated}
 
+import java.io.File
 import java.nio.file.Path
 import scala.math.Fractional.Implicits.infixFractionalOps
+import assignment.actors.Algorithm
 
 object FolderScanner:
   enum Command:
-    case Scan(path: Path, algorithm: ActorRef[Algorithm.Command])
     case Stop
 
-  def apply(): Behavior[Command] = idle()
+  import Command.*
 
-  private def idle(): Behavior[Command] =
-    import Command.*
-    Behaviors.receiveMessage[Command] {
-      case Scan(path, algorithm) => starting(path, algorithm)
-      case Stop => Behaviors.stopped
-    }
-
-  private def starting(path: Path, algorithm: ActorRef[Algorithm.Command]): Behavior[Command] =
-    import Command.*
+  def apply(path: Path, algorithm: ActorRef[Algorithm.Command]): Behavior[Command] =
     Behaviors.setup { context =>
-      var folderScanners = List.empty[ActorRef[FolderScanner.Command]]
-      var fileScanners = List.empty[ActorRef[FileScanner.Command]]
+      println(s"FolderScanner: ${path.toFile.getName}")
+      val directories = getDirectories(path)
+      val files = getFiles(path)
 
-      val allFiles = path.toFile.listFiles().toList
-      val directories = allFiles
-        .filter(_.isDirectory)
-        .filterNot(_.getName.startsWith(".")) // ignore hidden directories
-
-      val files = allFiles
-        .filterNot(_.isDirectory)
-        .filter(_.toString.endsWith(".java"))
-
-      directories.foreach { directory =>
-        val child = context.spawn(FolderScanner(), s"folderScanner-${directory.getName.hashCode}")
-        folderScanners = folderScanners :+ child
+      var folderScanners = directories.map { directory =>
+        val child = context.spawn(FolderScanner(directory.toPath, algorithm), s"folderScanner-${directory.getName.hashCode}")
         context.watch(child)
-        child ! Scan(directory.toPath, algorithm)
+        child
       }
 
-      files.foreach { file =>
-        val child = context.spawn(FileScanner(), s"fileScanner-${file.getName.hashCode()}")
-        fileScanners = fileScanners :+ child
+      var fileScanners = files.map { file =>
+        val child = context.spawn(FileScanner(file.toPath, algorithm), s"fileScanner-${file.getName.hashCode}")
         context.watch(child)
-        child ! FileScanner.Command.Scan(file.toPath, algorithm)
+        child
       }
 
       if folderScanners.isEmpty && fileScanners.isEmpty then
@@ -54,19 +37,32 @@ object FolderScanner:
       else
         Behaviors.receiveMessage[Command] {
           case Stop =>
-            folderScanners.foreach(_ ! Stop)
-            fileScanners.foreach(_ ! FileScanner.Command.Stop)
+            folderScanners.foreach(context.stop)
+            fileScanners.foreach(context.stop)
             Behaviors.same
-          case _ => Behaviors.same
         }.receiveSignal {
           case (_, Terminated(ref: ActorRef[_])) =>
-              folderScanners = folderScanners.filterNot(_ == ref)
-              fileScanners = fileScanners.filterNot(_ == ref)
-              if folderScanners.isEmpty && fileScanners.isEmpty then
-                Behaviors.stopped
-              else
-                Behaviors.same
+            folderScanners = folderScanners.filterNot(_ == ref)
+            fileScanners = fileScanners.filterNot(_ == ref)
+            if folderScanners.isEmpty && fileScanners.isEmpty then
+              Behaviors.stopped
+            else
+              Behaviors.same
         }
     }
+
+  private def getDirectories(path: Path): Seq[File] =
+    path.toFile.listFiles()
+      .filter(_.isDirectory)
+      .filterNot(_.getName.startsWith("."))
+      .toSeq
+
+  private def getFiles(path: Path): Seq[File] =
+    path.toFile.listFiles()
+      .filterNot(_.isDirectory)
+      .filter(_.toString.endsWith(".java"))
+      .toSeq
+
+
 
 

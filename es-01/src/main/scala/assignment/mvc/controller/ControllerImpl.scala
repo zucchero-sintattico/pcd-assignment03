@@ -1,6 +1,7 @@
 package assignment.mvc.controller
-import akka.actor.typed.ActorSystem
-import assignment.Domain._
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorRef, ActorSystem, Behavior, Terminated}
+import assignment.Domain.*
 import assignment.Domain.ReportConfiguration
 import assignment.actors.Algorithm
 import assignment.actors.Algorithm.AppListener
@@ -8,11 +9,33 @@ import assignment.mvc.view.View
 
 import java.nio.file.Path
 
+object System:
+  enum Command:
+    case StartAlgorithm(path: Path, reportConfiguration: ReportConfiguration, appListener: AppListener)
+    case StopAlgorithm
+    case AlgorithmCompleted
+
+  def apply(): Behavior[Command] =
+    Behaviors.setup { context =>
+      Behaviors.receiveMessage {
+        case Command.StartAlgorithm(path, reportConfiguration, appListener) =>
+          val algorithm = context.spawn(Algorithm(path, reportConfiguration, appListener), "algorithm")
+          context.watchWith(algorithm, Command.AlgorithmCompleted)
+          Behaviors.same
+        case Command.StopAlgorithm =>
+          context.children.foreach(context.stop)
+          Behaviors.same
+        case Command.AlgorithmCompleted =>
+          Behaviors.same
+      }
+    }
+
+
 class ControllerImpl extends Controller:
 
   private var view: View = _
   private var status = AlgorithmStatus.IDLE
-  private val algorithm = ActorSystem(Algorithm(), "algorithm")
+  private val system = ActorSystem(System(), "system")
 
   override def setView(view: View): Unit = this.view = view
 
@@ -38,15 +61,13 @@ class ControllerImpl extends Controller:
           import scala.jdk.CollectionConverters.MapHasAsJava
           view.updateDistribution(distribution.asInstanceOf[Map[Range, Integer]].asJava)
 
-      algorithm ! Algorithm.Command.Start(path, reportConfiguration, appListener)
-
-
+      system ! System.Command.StartAlgorithm(path, reportConfiguration, appListener)
       status = AlgorithmStatus.RUNNING
       view.updateAlgorithmStatus(status)
 
 
   override def stopAlgorithm(): Unit =
     if status == AlgorithmStatus.RUNNING then
-      algorithm ! Algorithm.Command.Stop
+      system ! System.Command.StopAlgorithm
       status = AlgorithmStatus.STOPPED
       view.updateAlgorithmStatus(status)
