@@ -52,7 +52,7 @@ public class PixelArtConnection {
             grid.set(x, y, color);
         };
         try {
-            channel.basicConsume("NewColor", true, newColorCallback, consumerTag -> {});
+            this.channel.basicConsume("NewColor", true, newColorCallback, consumerTag -> {});
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -74,10 +74,8 @@ public class PixelArtConnection {
                     var newBrush = new BrushManager.Brush(newX, newY, 0);
                     brushManager.getBrushMap().put(brushId, newBrush);
             });
-
-
         };
-        channel.basicConsume("NewPosition", true, newBrushPositionCallback, consumerTag -> {});
+        this.channel.basicConsume("NewPosition", true, newBrushPositionCallback, consumerTag -> {});
     }
 
     private void defineDisconnectCallback(BrushManager brushManager) throws IOException {
@@ -89,13 +87,13 @@ public class PixelArtConnection {
             UUID brushId = UUID.fromString(parts[0]);
             brushManager.getBrushMap().remove(brushId);
         };
-        channel.basicConsume("Disconnect", true, disconnectCallback, consumerTag -> {});
+        this.channel.basicConsume("Disconnect", true, disconnectCallback, consumerTag -> {});
     }
 
     public void sendNewColorToBroker(UUID id, int x, int y, int color) {
         try {
             String message = id + " " + x + " " + y + " " + color;
-            channel.basicPublish("", "NewColor", null, message.getBytes());
+            this.channel.basicPublish("", "NewColor", null, message.getBytes());
             System.out.println(" [*] Sent COLOR '" + message + "'");
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -107,9 +105,8 @@ public class PixelArtConnection {
         delayTicks %= 50;
         try {
             if (delayTicks == 0) {
-
                 String message = id + " " + x + " " + y;
-                channel.basicPublish("", "NewPosition", null, message.getBytes());
+                this.channel.basicPublish("", "NewPosition", null, message.getBytes());
                 System.out.println(" [*] Sent POSITION '" + message + "'");
             }
         } catch (IOException e) {
@@ -120,7 +117,7 @@ public class PixelArtConnection {
     public void sendDisconnectMessageToBroker(UUID uuid) {
         try {
             String message = uuid.toString();
-            channel.basicPublish("", "Disconnect", null, message.getBytes());
+            this.channel.basicPublish("", "Disconnect", null, message.getBytes());
             System.out.println(" [*] Sent DISCONNECT'" + message + "'");
         } catch (IOException e) {
             throw new RuntimeException(e);
