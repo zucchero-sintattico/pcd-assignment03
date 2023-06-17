@@ -14,7 +14,6 @@ object ReportBuilder:
     Behaviors.setup { context =>
       import Command.*
       val report = new Report(reportConfiguration)
-      // fill the distribution map
       fillDistributionMap(report)
       Behaviors.receiveMessage {
         case AddStatistic(statistic) =>
