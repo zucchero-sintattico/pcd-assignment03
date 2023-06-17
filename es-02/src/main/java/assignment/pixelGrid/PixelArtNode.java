@@ -12,6 +12,8 @@ public class PixelArtNode {
     private PixelGrid grid;
     private final PixelArtConnection connection = new PixelArtConnection();
     private final UUID uuid = UUID.randomUUID();
+    private final StartMenuView startMenuView = new StartMenuView();
+    private PixelGridView gridView;
 
     public static int randomColor() {
         Random rand = new Random();
@@ -22,37 +24,46 @@ public class PixelArtNode {
         this.brushManager = new BrushManager();
         this.localBrush = new BrushManager.Brush(0, 0, randomColor());
         this.brushManager.addBrush(this.uuid, localBrush);
-        PixelGridView view = setUpGrid();
+        this.gridView = setUpGrid();
         this.connection.setUpConnection();
         this.connection.defineCallbacks(this.grid, this.brushManager);
+        this.setUpGridViewListeners();
+        gridView.display();
+    }
 
-        view.addMouseMovedListener((x, y) -> {
+    private void setUpGridViewListeners() {
+        gridView.addMouseMovedListener((x, y) -> {
             localBrush.updatePosition(x, y);
             this.connection.sendNewPositionToBroker(this.uuid, x, y);
            // System.out.println(localBrush.getX() + " " + localBrush.getY());
-            view.refresh();
+            gridView.refresh();
         });
 
-        view.addPixelGridEventListener((x, y) -> {
+        gridView.addPixelGridEventListener((x, y) -> {
             grid.set(x, y, localBrush.getColor());
             this.connection.sendNewColorToBroker(this.uuid, x, y, localBrush.getColor());
-            view.refresh();
+            gridView.refresh();
         });
 
-        view.addColorChangedListener(localBrush::setColor);
+        gridView.addColorChangedListener((int color) -> {
+            this.localBrush.setColor(color);
+            // TODO: send color change to broker
+        });
         // add listener for closing the window
-        view.addWindowClosedListener(() -> {
-            try {
-                this.connection.sendDisconnectMessageToBroker(this.uuid);
-                this.connection.closeConnection();
-            } catch (IOException | TimeoutException e) {
-                e.printStackTrace();
-            }
+        gridView.addWindowClosedListener(() -> {
+            // TODO: send disconnect message to broker
         });
-        view.addColorChangedListener(localBrush::setColor);
-
-        view.display();
+        gridView.addColorChangedListener(localBrush::setColor);
     }
+
+    public void createSession(){
+        // TODO
+    }
+
+    public void joinSession(int sessionId){
+        // TODO
+    }
+
 
     private PixelGridView setUpGrid() throws IOException, TimeoutException {
         this.grid = new PixelGrid(40,40);
