@@ -56,7 +56,7 @@ public class PixelArtConnection {
     }
 
     /*
-    *  Subscriber Methods
+         *  Subscriber Methods
      */
 
     public void defineCallbacks() throws IOException {
