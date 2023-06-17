@@ -6,6 +6,7 @@ import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.DeliverCallback;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
@@ -27,6 +28,9 @@ public class PixelArtConnection {
     private int delayTicks = 0;
     private final PixelArtNode node;
 
+    private Boolean inSync = false;
+
+    private List<PixelInfo> pixelInfoBuffer;
 
     public PixelArtConnection(PixelArtNode node) {
         this.node = node;
@@ -124,6 +128,19 @@ public class PixelArtConnection {
 
     private void defineNewBrushPositionCallback(BrushManager brushManager) throws IOException {
         DeliverCallback newBrushPositionCallback = (consumerTag, delivery) -> {
+
+            // while not inSync, add messages to buffer
+            if (!inSync) {
+                String message = new String(delivery.getBody(), "UTF-8");
+                String[] parts = message.split(" ");
+                int x = Integer.parseInt(parts[1]);
+                int y = Integer.parseInt(parts[2]);
+                int color = Integer.parseInt(parts[3]);
+                pixelInfoBuffer.add(new PixelInfo(x, y, color));
+                return;
+            }
+
+            //
             String message = new String(delivery.getBody(), "UTF-8");
             //System.out.println(" [x] Received POSITION '" + message);
             String[] parts = message.split(" ");
@@ -195,4 +212,10 @@ public class PixelArtConnection {
     }
 
 
+    public void defineBufferSyncCallback(List[] buffer) {
+        // consume from buffer list and apply to grid
+
+
+
+    }
 }

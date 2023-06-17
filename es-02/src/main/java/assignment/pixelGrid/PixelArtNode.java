@@ -1,6 +1,7 @@
 package assignment.pixelGrid;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
@@ -45,7 +46,7 @@ public class PixelArtNode {
     private void setUpMatch(String sessionId) throws IOException, TimeoutException {
         this.gridView = setUpGrid();
         this.connection.setUpConnection(sessionId, this.uuid.toString());
-        this.setUpGridViewListeners();
+
         gridView.display();
     }
 
