@@ -57,7 +57,17 @@ public class PixelArtConnection {
         DeliverCallback deliverCallback = (consumerTag, delivery) -> {
             String gridState = new String(delivery.getBody(), "UTF-8");
             try {
-                this.node.setGrid(PixelGrid.createFromSring(gridState));
+                // Get the grid from the server
+                this.node.setGrid(PixelGrid.createFromString(gridState));
+                this.pixelInfoBuffer.forEach(pixelInfo -> this.node.getGrid().set(pixelInfo.getX(), pixelInfo.getY(), pixelInfo.getColor()));
+                this.inSync = true;
+                // Start to listen to new requests
+                this.channel.queueDeclare(this.sessionId, false, false, false, null);
+                this.channel.basicConsume(this.sessionId, true, (c, d) ->{
+                    String userId = new String(d.getBody(), "UTF-8");
+                    this.channel.queueDeclare(userId, false, false, false, null);
+                    this.channel.basicPublish("", userId, null, this.node.getGrid().toString().getBytes("UTF-8"));
+                }, consumerTag1 -> {});
             } catch (TimeoutException e) {
                 throw new RuntimeException(e);
             }

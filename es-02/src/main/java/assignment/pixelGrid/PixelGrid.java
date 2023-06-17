@@ -43,7 +43,7 @@ public class PixelGrid {
 		return this.nColumns;
 	}
 
-	public static PixelGrid createFromSring(final String gridString) throws IOException, TimeoutException {
+	public static PixelGrid createFromString(final String gridString) throws IOException, TimeoutException {
 		final String[] rows = gridString.split("\n");
 		final int nRows = rows.length;
 		final int nColumns = rows[0].split(",").length;
