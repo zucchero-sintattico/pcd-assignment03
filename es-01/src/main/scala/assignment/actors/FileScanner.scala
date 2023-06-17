@@ -11,6 +11,7 @@ import scala.io.Source
 import scala.util.Try
 import assignment.actors.Algorithm
 
+import java.util.concurrent.Executors
 import scala.concurrent.{ExecutionContext, Future}
 
 object FileScanner:
@@ -22,9 +23,7 @@ object FileScanner:
   def apply(path: Path, algorithm: ActorRef[Algorithm.Command]): Behavior[Command] =
     Behaviors.setup { context =>
 
-      given ExecutionContext = context.executionContext
-      getStatistic(path)
-        .foreach(statistic => context.self ! ScanResult(statistic))
+      context.self ! ScanResult(getStatistic(path))
 
       Behaviors.receiveMessage {
         case ScanResult(statistic) =>
@@ -33,14 +32,11 @@ object FileScanner:
       }
     }
 
-  private def getStatistic(path: Path)(using context: ExecutionContext): Future[Statistic] =
-    Future {
+  private def getStatistic(path: Path): Statistic =
       Try {
-        Thread.sleep(50)
         val source = Source.fromFile(path.toFile)
         val lines = source.getLines().toList.size
         source.close()
         Statistic(path, lines)
       }.getOrElse(Statistic(path, 0))
-    }(context)
 
