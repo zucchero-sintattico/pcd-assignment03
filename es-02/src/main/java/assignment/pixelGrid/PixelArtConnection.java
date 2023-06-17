@@ -5,28 +5,49 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.DeliverCallback;
 
-import javax.swing.text.html.Option;
 import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
 public class PixelArtConnection {
+    private static final String NEW_POSITION_EXCHANGE_NAME = "NewPosition";
+    private static final String NEW_COLOR_EXCHANGE_NAME = "NewColor";
+    private static final String DISCONNECT_EXCHANGE_NAME = "Disconnect";
+    private String newPositionQueueName;
+    private String newColorQueueName;
+    private String disconnectQueueName;
     private Channel channel;
     private Connection connection;
     private int delayTicks = 0;
+    private final PixelArtNode node;
 
-    public void setUpConnection() throws IOException, TimeoutException {
+    public PixelArtConnection(PixelArtNode node) {
+        this.node = node;
+    }
+
+    public void setUpConnection(){
         ConnectionFactory factory = new ConnectionFactory();
         factory.setHost("localhost");
-        this.connection = factory.newConnection();
-        this.channel = connection.createChannel();
-        this.declareQueues();
+        try {
+            this.connection = factory.newConnection();
+            this.channel = connection.createChannel();
+            this.declareQueues();
+        } catch (IOException | TimeoutException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
     private void declareQueues() throws IOException {
-        this.channel.queueDeclare("NewPosition", false, false, false, null);
-        this.channel.queueDeclare("NewColor", false, false, false, null);
-        this.channel.queueDeclare("Disconnect", false, false, false, null);
+        channel.exchangeDeclare(NEW_COLOR_EXCHANGE_NAME, "fanout");
+        this.newColorQueueName = channel.queueDeclare().getQueue();
+        channel.queueBind(this.newColorQueueName, NEW_COLOR_EXCHANGE_NAME, "");
+        channel.exchangeDeclare(NEW_POSITION_EXCHANGE_NAME, "fanout");
+        this.newPositionQueueName = channel.queueDeclare().getQueue();
+        channel.queueBind(this.newPositionQueueName, NEW_POSITION_EXCHANGE_NAME, "");
+        channel.exchangeDeclare(DISCONNECT_EXCHANGE_NAME, "fanout");
+        this.disconnectQueueName = channel.queueDeclare().getQueue();
+        channel.queueBind(this.disconnectQueueName, DISCONNECT_EXCHANGE_NAME, "");
     }
 
     public void closeConnection() throws IOException, TimeoutException {
@@ -34,79 +55,91 @@ public class PixelArtConnection {
         this.connection.close();
     }
 
-    public void defineCallbacks(PixelGrid grid, BrushManager brushManager) throws IOException {
-        this.defineNewPositionCallback(brushManager);
-        this.defineNewColorCallback(grid);
-        this.defineDisconnectCallback(brushManager);
+    /*
+         *  Subscriber Methods
+     */
+
+    public void defineCallbacks() throws IOException {
+        this.defineNewBrushPositionCallback(this.node.getBrushManager());
+        this.definePixelUpdateCallback(this.node.getGrid(), this.node.getView());
+        this.defineUserDisconnectedCallback(this.node.getBrushManager());
     }
 
 
-    private void defineNewColorCallback(PixelGrid grid) {
+    private void definePixelUpdateCallback(PixelGrid grid, PixelGridView view) {
         DeliverCallback newColorCallback = (consumerTag, delivery) -> {
             String message = new String(delivery.getBody(), "UTF-8");
-            System.out.println(" [x] Received C '" + message + "' by thread "+Thread.currentThread().getName());
+            System.out.println(" [x] Received C '" + message);
             String[] parts = message.split(" ");
             int x = Integer.parseInt(parts[1]);
             int y = Integer.parseInt(parts[2]);
             int color = Integer.parseInt(parts[3]);
             grid.set(x, y, color);
+            System.out.println("New-Color: "+grid.get(x, y));
+            view.refresh();
         };
         try {
-            this.channel.basicConsume("NewColor", true, newColorCallback, consumerTag -> {});
+            this.channel.basicConsume(this.newColorQueueName, true, newColorCallback, consumerTag -> {});
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void defineNewPositionCallback(BrushManager brushManager) throws IOException {
+    private void defineNewBrushPositionCallback(BrushManager brushManager) throws IOException {
         DeliverCallback newBrushPositionCallback = (consumerTag, delivery) -> {
             String message = new String(delivery.getBody(), "UTF-8");
-            System.out.println(" [x] Received POSITION '" + message);
-
+            //System.out.println(" [x] Received POSITION '" + message);
             String[] parts = message.split(" ");
             // Message: brushId x y color
             UUID brushId = UUID.fromString(parts[0]);
             int newX = Integer.parseInt(parts[1]);
             int newY = Integer.parseInt(parts[2]);
+            int newColor = Integer.parseInt(parts[3]);
             var brush = brushManager.getBrushMap().keySet().stream().filter(b -> b.equals(brushId)).findFirst();
-            brush.ifPresentOrElse(b -> brushManager.getBrushMap().get(brushId).updatePosition(newX, newY),
-                    () -> {
-                    var newBrush = new BrushManager.Brush(newX, newY, 0);
-                    brushManager.getBrushMap().put(brushId, newBrush);
-            });
+            brush.ifPresentOrElse(b -> {
+                                        brushManager.getBrushMap().get(brushId).updatePosition(newX, newY);
+                                        brushManager.getBrushMap().get(brushId).setColor(newColor);
+                    },
+                    () -> { var newBrush = new BrushManager.Brush(newX, newY, newColor);
+                            brushManager.getBrushMap().put(brushId, newBrush);
+                    });
         };
-        this.channel.basicConsume("NewPosition", true, newBrushPositionCallback, consumerTag -> {});
+
+        this.channel.basicConsume(this.newPositionQueueName, true, newBrushPositionCallback, consumerTag -> {});
     }
 
-    private void defineDisconnectCallback(BrushManager brushManager) throws IOException {
+    private void defineUserDisconnectedCallback(BrushManager brushManager) throws IOException {
         DeliverCallback disconnectCallback = (consumerTag, delivery) -> {
             String message = new String(delivery.getBody(), "UTF-8");
-            System.out.println(" -Disconnected '" + message + "' by thread "+Thread.currentThread().getName());
+            System.out.println(" -Disconnected '" + message);
             String[] parts = message.split(" ");
             // Message: brushId
             UUID brushId = UUID.fromString(parts[0]);
             brushManager.getBrushMap().remove(brushId);
         };
-        this.channel.basicConsume("Disconnect", true, disconnectCallback, consumerTag -> {});
+        this.channel.basicConsume(this.disconnectQueueName, true, disconnectCallback, consumerTag -> {});
     }
 
-    public void sendNewColorToBroker(UUID id, int x, int y, int color) {
+    /*
+        * Publisher methods
+     */
+    public void sendPixelUpdateToBroker(UUID id, int x, int y, int color) {
         try {
             String message = id + " " + x + " " + y + " " + color;
-            this.channel.basicPublish("", "NewColor", null, message.getBytes());
+            channel.basicPublish(NEW_COLOR_EXCHANGE_NAME, "", null, message.getBytes("UTF-8"));
             System.out.println(" [*] Sent COLOR '" + message + "'");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public void sendNewPositionToBroker(UUID id, int x, int y) {
+    public void sendNewBrushPositionToBroker(UUID id, int x, int y, int color) {
         delayTicks++;
         delayTicks %= 50;
         try {
             if (delayTicks == 0) {
-                String message = id + " " + x + " " + y;
-                this.channel.basicPublish("", "NewPosition", null, message.getBytes());
+                String message = id + " " + x + " " + y + " " + color;
+                channel.basicPublish(NEW_POSITION_EXCHANGE_NAME, "", null, message.getBytes("UTF-8"));
                 System.out.println(" [*] Sent POSITION '" + message + "'");
             }
         } catch (IOException e) {
@@ -114,10 +147,10 @@ public class PixelArtConnection {
         }
     }
 
-    public void sendDisconnectMessageToBroker(UUID uuid) {
+    public void sendUserDisconnectionToBroker(UUID uuid) {
         try {
             String message = uuid.toString();
-            this.channel.basicPublish("", "Disconnect", null, message.getBytes());
+            channel.basicPublish(DISCONNECT_EXCHANGE_NAME, "", null, message.getBytes("UTF-8"));
             System.out.println(" [*] Sent DISCONNECT'" + message + "'");
         } catch (IOException e) {
             throw new RuntimeException(e);
