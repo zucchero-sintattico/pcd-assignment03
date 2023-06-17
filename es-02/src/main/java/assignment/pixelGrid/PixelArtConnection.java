@@ -10,44 +10,82 @@ import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
 public class PixelArtConnection {
-    private static final String NEW_POSITION_EXCHANGE_NAME = "NewPosition";
-    private static final String NEW_COLOR_EXCHANGE_NAME = "NewColor";
-    private static final String DISCONNECT_EXCHANGE_NAME = "Disconnect";
-    private String newPositionQueueName;
-    private String newColorQueueName;
-    private String disconnectQueueName;
+    private static final String NEW_BRUSH_POSITION_EXCHANGE_POSTFIX = "NewBrushPosition";
+    private static final String NEW_PIXEL_POSITION_EXCHANGE_POSTFIX = "NewPixelUpdate";
+    private static final String USER_DISCONNECTION_EXCHANGE_POSTFIX = "User Disconnection";
+
+    private String newBrushPositionExchangeName;
+    private String newPixelUpdateExchangeName;
+    private String userDisconnectionExchangeName;
+    private String sessionId;
+    private String userId;
+
+    private String newBrushPositionQueueName;
+    private String newPixelUpdateQueueName;
+    private String userDisconnectionQueueName;
     private Channel channel;
     private Connection connection;
     private int delayTicks = 0;
     private final PixelArtNode node;
 
+
     public PixelArtConnection(PixelArtNode node) {
         this.node = node;
     }
 
-    public void setUpConnection(){
+    public void setUpConnection(String sessionId, String userId){
+        this.userId = userId;
+        this.sessionId = sessionId;
         ConnectionFactory factory = new ConnectionFactory();
         factory.setHost("localhost");
         try {
             this.connection = factory.newConnection();
             this.channel = connection.createChannel();
             this.declareQueues();
+            this.defineCallbacks();
+            this.waitSessionGrid();
         } catch (IOException | TimeoutException e) {
             throw new RuntimeException(e);
         }
 
     }
 
+    private void waitSessionGrid() {
+        DeliverCallback deliverCallback = (consumerTag, delivery) -> {
+            String gridState = new String(delivery.getBody(), "UTF-8");
+            try {
+                this.node.setGrid(PixelGrid.createFromSring(gridState));
+            } catch (TimeoutException e) {
+                throw new RuntimeException(e);
+            }
+        };
+        try {
+            this.channel.queueDeclare(this.userId, false, false, false, null);
+            this.channel.basicConsume(this.userId, true, deliverCallback, consumerTag -> {});
+            this.channel.basicPublish("", this.sessionId, null, this.userId.getBytes("UTF-8"));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
     private void declareQueues() throws IOException {
-        channel.exchangeDeclare(NEW_COLOR_EXCHANGE_NAME, "fanout");
-        this.newColorQueueName = channel.queueDeclare().getQueue();
-        channel.queueBind(this.newColorQueueName, NEW_COLOR_EXCHANGE_NAME, "");
-        channel.exchangeDeclare(NEW_POSITION_EXCHANGE_NAME, "fanout");
-        this.newPositionQueueName = channel.queueDeclare().getQueue();
-        channel.queueBind(this.newPositionQueueName, NEW_POSITION_EXCHANGE_NAME, "");
-        channel.exchangeDeclare(DISCONNECT_EXCHANGE_NAME, "fanout");
-        this.disconnectQueueName = channel.queueDeclare().getQueue();
-        channel.queueBind(this.disconnectQueueName, DISCONNECT_EXCHANGE_NAME, "");
+        this.newBrushPositionExchangeName = this.sessionId + NEW_BRUSH_POSITION_EXCHANGE_POSTFIX;
+        this.newPixelUpdateExchangeName = this.sessionId + NEW_PIXEL_POSITION_EXCHANGE_POSTFIX;
+        this.userDisconnectionExchangeName = this.sessionId + USER_DISCONNECTION_EXCHANGE_POSTFIX;
+        try {
+            channel.exchangeDeclare(this.newPixelUpdateQueueName, "fanout");
+            this.newPixelUpdateQueueName = channel.queueDeclare().getQueue();
+            channel.queueBind(this.newPixelUpdateQueueName, this.newPixelUpdateExchangeName, "");
+            channel.exchangeDeclare(this.newBrushPositionExchangeName, "fanout");
+            this.newBrushPositionQueueName = channel.queueDeclare().getQueue();
+            channel.queueBind(this.newBrushPositionQueueName, this.newBrushPositionExchangeName, "");
+            channel.exchangeDeclare(userDisconnectionExchangeName, "fanout");
+            this.userDisconnectionQueueName = channel.queueDeclare().getQueue();
+            channel.queueBind(this.userDisconnectionQueueName, userDisconnectionExchangeName, "");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void closeConnection() throws IOException, TimeoutException {
@@ -56,10 +94,10 @@ public class PixelArtConnection {
     }
 
     /*
-         *  Subscriber Methods
+     *  Subscriber Methods
      */
 
-    public void defineCallbacks() throws IOException {
+    private void defineCallbacks() throws IOException {
         this.defineNewBrushPositionCallback(this.node.getBrushManager());
         this.definePixelUpdateCallback(this.node.getGrid(), this.node.getView());
         this.defineUserDisconnectedCallback(this.node.getBrushManager());
@@ -79,7 +117,7 @@ public class PixelArtConnection {
             view.refresh();
         };
         try {
-            this.channel.basicConsume(this.newColorQueueName, true, newColorCallback, consumerTag -> {});
+            this.channel.basicConsume(this.newPixelUpdateQueueName, true, newColorCallback, consumerTag -> {});
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -105,7 +143,7 @@ public class PixelArtConnection {
                     });
         };
 
-        this.channel.basicConsume(this.newPositionQueueName, true, newBrushPositionCallback, consumerTag -> {});
+        this.channel.basicConsume(this.newBrushPositionQueueName, true, newBrushPositionCallback, consumerTag -> {});
     }
 
     private void defineUserDisconnectedCallback(BrushManager brushManager) throws IOException {
@@ -117,16 +155,16 @@ public class PixelArtConnection {
             UUID brushId = UUID.fromString(parts[0]);
             brushManager.getBrushMap().remove(brushId);
         };
-        this.channel.basicConsume(this.disconnectQueueName, true, disconnectCallback, consumerTag -> {});
+        this.channel.basicConsume(this.userDisconnectionQueueName, true, disconnectCallback, consumerTag -> {});
     }
 
     /*
-        * Publisher methods
+     * Publisher methods
      */
     public void sendPixelUpdateToBroker(UUID id, int x, int y, int color) {
         try {
             String message = id + " " + x + " " + y + " " + color;
-            channel.basicPublish(NEW_COLOR_EXCHANGE_NAME, "", null, message.getBytes("UTF-8"));
+            channel.basicPublish(NEW_PIXEL_POSITION_EXCHANGE_POSTFIX, "", null, message.getBytes("UTF-8"));
             System.out.println(" [*] Sent COLOR '" + message + "'");
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -139,7 +177,7 @@ public class PixelArtConnection {
         try {
             if (delayTicks == 0) {
                 String message = id + " " + x + " " + y + " " + color;
-                channel.basicPublish(NEW_POSITION_EXCHANGE_NAME, "", null, message.getBytes("UTF-8"));
+                channel.basicPublish(NEW_BRUSH_POSITION_EXCHANGE_POSTFIX, "", null, message.getBytes("UTF-8"));
                 System.out.println(" [*] Sent POSITION '" + message + "'");
             }
         } catch (IOException e) {
@@ -150,7 +188,7 @@ public class PixelArtConnection {
     public void sendUserDisconnectionToBroker(UUID uuid) {
         try {
             String message = uuid.toString();
-            channel.basicPublish(DISCONNECT_EXCHANGE_NAME, "", null, message.getBytes("UTF-8"));
+            channel.basicPublish(USER_DISCONNECTION_EXCHANGE_POSTFIX, "", null, message.getBytes("UTF-8"));
             System.out.println(" [*] Sent DISCONNECT'" + message + "'");
         } catch (IOException e) {
             throw new RuntimeException(e);

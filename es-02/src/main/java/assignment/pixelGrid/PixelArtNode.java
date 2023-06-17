@@ -36,13 +36,15 @@ public class PixelArtNode {
         return rand.nextInt(256 * 256 * 256);
     }
 
-    public void start() throws IOException, TimeoutException {
+    public void start() {
         this.brushManager = new BrushManager();
         this.localBrush = new BrushManager.Brush(0, 0, randomColor());
         this.brushManager.addBrush(this.uuid, localBrush);
+    }
+
+    private void setUpMatch(String sessionId) throws IOException, TimeoutException {
         this.gridView = setUpGrid();
-        this.connection.setUpConnection();
-        this.connection.defineCallbacks();
+        this.connection.setUpConnection(sessionId, this.uuid.toString());
         this.setUpGridViewListeners();
         gridView.display();
     }
@@ -82,6 +84,9 @@ public class PixelArtNode {
         // TODO
     }
 
+    public void setGrid(PixelGrid grid) {
+        this.grid = grid;
+    }
 
     private PixelGridView setUpGrid() throws IOException, TimeoutException {
         this.grid = new PixelGrid(40,40);

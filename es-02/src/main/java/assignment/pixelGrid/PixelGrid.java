@@ -42,5 +42,33 @@ public class PixelGrid {
 	public int getNumColumns() {
 		return this.nColumns;
 	}
+
+	public static PixelGrid createFromSring(final String gridString) throws IOException, TimeoutException {
+		final String[] rows = gridString.split("\n");
+		final int nRows = rows.length;
+		final int nColumns = rows[0].split(",").length;
+		final PixelGrid grid = new PixelGrid(nRows, nColumns);
+		for (int y = 0; y < nRows; y++) {
+			final String[] row = rows[y].split(",");
+			for (int x = 0; x < nColumns; x++) {
+				grid.set(x, y, Integer.parseInt(row[x]));
+			}
+		}
+		return grid;
+	}
+
+	public String toString() {
+		final StringBuilder sb = new StringBuilder();
+		for (int y = 0; y < nRows; y++) {
+			for (int x = 0; x < nColumns; x++) {
+				sb.append(grid[y][x]);
+				if (x < nColumns - 1) {
+					sb.append(",");
+				}
+			}
+			sb.append("\n");
+		}
+		return sb.toString();
+	}
 	
 }
