@@ -10,7 +10,7 @@ public class PixelArtNode {
     private BrushManager brushManager;
     private BrushManager.Brush localBrush;
     private PixelGrid grid;
-    private PixelArtConnection connection = new PixelArtConnection();
+    private final PixelArtConnection connection = new PixelArtConnection();
     private final UUID uuid = UUID.randomUUID();
 
     public static int randomColor() {
@@ -21,8 +21,7 @@ public class PixelArtNode {
     public void Start() throws IOException, TimeoutException {
         this.brushManager = new BrushManager();
         this.localBrush = new BrushManager.Brush(0, 0, randomColor());
-
-        brushManager.addBrush(this.uuid, localBrush);
+        this.brushManager.addBrush(this.uuid, localBrush);
         PixelGridView view = setUpGrid();
         this.connection.setUpConnection();
         this.connection.defineCallbacks(this.grid, this.brushManager);
