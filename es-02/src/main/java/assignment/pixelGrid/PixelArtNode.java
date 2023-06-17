@@ -18,7 +18,7 @@ public class PixelArtNode {
         return rand.nextInt(256 * 256 * 256);
     }
 
-    public void Start() throws IOException, TimeoutException {
+    public void start() throws IOException, TimeoutException {
         this.brushManager = new BrushManager();
         this.localBrush = new BrushManager.Brush(0, 0, randomColor());
         this.brushManager.addBrush(this.uuid, localBrush);
