@@ -24,19 +24,19 @@ public class PixelArtNode {
 
         brushManager.addBrush(this.uuid, localBrush);
         PixelGridView view = setUpGrid();
-        //this.connection.setUpConnection();
-        //this.connection.defineCallbacks(this.grid, this.brushManager);
+        this.connection.setUpConnection();
+        this.connection.defineCallbacks(this.grid, this.brushManager);
 
         view.addMouseMovedListener((x, y) -> {
             localBrush.updatePosition(x, y);
-            //this.connection.sendNewPositionToBroker(this.uuid, x, y);
-            System.out.println(localBrush.getX() + " " + localBrush.getY());
+            this.connection.sendNewPositionToBroker(this.uuid, x, y);
+           // System.out.println(localBrush.getX() + " " + localBrush.getY());
             view.refresh();
         });
 
         view.addPixelGridEventListener((x, y) -> {
             grid.set(x, y, localBrush.getColor());
-            //this.connection.sendNewColorToBroker(this.uuid, x, y, localBrush.getColor());
+            this.connection.sendNewColorToBroker(this.uuid, x, y, localBrush.getColor());
             view.refresh();
         });
 
@@ -50,7 +50,7 @@ public class PixelArtNode {
                 e.printStackTrace();
             }
         });
-        //view.addColorChangedListener(localBrush::setColor);
+        view.addColorChangedListener(localBrush::setColor);
 
         view.display();
     }

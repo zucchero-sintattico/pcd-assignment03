@@ -42,9 +42,9 @@ public class PixelArtConnection {
             String message = new String(delivery.getBody(), "UTF-8");
             System.out.println(" [x] Received C '" + message + "' by thread "+Thread.currentThread().getName());
             String[] parts = message.split(" ");
-            int y = Integer.parseInt(parts[0].substring(6, parts[0].length() - 1));
-            int x = Integer.parseInt(parts[1].substring(1, parts[1].length() - 2));
-            int color = Integer.parseInt(parts[2]);
+            int x = Integer.parseInt(parts[1]);
+            int y = Integer.parseInt(parts[2]);
+            int color = Integer.parseInt(parts[3]);
             grid.set(x, y, color);
         };
         try {
@@ -58,6 +58,7 @@ public class PixelArtConnection {
         DeliverCallback newBrushPositionCallback = (consumerTag, delivery) -> {
             String message = new String(delivery.getBody(), "UTF-8");
             System.out.println(" [x] Received POSITION '" + message);
+            /*
             String[] parts = message.split(" ");
             // Message: brushId x y color
             UUID brushId = UUID.fromString(parts[0]);
@@ -70,6 +71,8 @@ public class PixelArtConnection {
                     var newBrush = new BrushManager.Brush(newX, newY, color);
                     brushManager.getBrushMap().put(brushId, newBrush);
             });
+
+             */
         };
         channel.basicConsume("NewPosition", true, newBrushPositionCallback, consumerTag -> {});
     }
@@ -78,10 +81,13 @@ public class PixelArtConnection {
         DeliverCallback disconnectCallback = (consumerTag, delivery) -> {
             String message = new String(delivery.getBody(), "UTF-8");
             System.out.println(" -DELETE '" + message + "' by thread "+Thread.currentThread().getName());
+            /*
             String[] parts = message.split(" ");
             // Message: brushId
             UUID brushId = UUID.fromString(parts[0]);
             brushManager.getBrushMap().remove(brushId);
+
+             */
         };
         channel.basicConsume("Disconnect", true, disconnectCallback, consumerTag -> {});
     }
