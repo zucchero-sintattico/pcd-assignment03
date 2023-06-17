@@ -39,10 +39,12 @@ object ReportBuilder:
               report.distribution = report.distribution.updated(range, report.distribution.apply(range) + 1)
               notifyTo ! ViewNotificationListeners.Command.DistributionChanged(report.distribution)
 
+          println("Added statistic - " + report.statistics.size)
           notifyTo ! ViewNotificationListeners.Command.NumberOfFilesChanged(report.statistics.size)
           Behaviors.same
         case Complete =>
           println("Completed")
+          notifyTo ! ViewNotificationListeners.Command.Complete
           Behaviors.stopped
       }
     }

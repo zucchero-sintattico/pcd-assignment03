@@ -60,14 +60,12 @@ object FolderScanner:
           case _ => Behaviors.same
         }.receiveSignal {
           case (_, Terminated(ref: ActorRef[_])) =>
-            if ref.isInstanceOf[FolderScanner.Command] then
               folderScanners = folderScanners.filterNot(_ == ref)
-            else
               fileScanners = fileScanners.filterNot(_ == ref)
-            if folderScanners.isEmpty && fileScanners.isEmpty then
-              Behaviors.stopped
-            else
-              Behaviors.same
+              if folderScanners.isEmpty && fileScanners.isEmpty then
+                Behaviors.stopped
+              else
+                Behaviors.same
         }
     }
 

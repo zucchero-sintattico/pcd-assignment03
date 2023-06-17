@@ -188,6 +188,8 @@ public class ViewImpl extends JFrame implements View {
 
     @Override
     public void updateNumberOfFiles(int numberOfFiles) {
+        System.out.println("Founded files: " + numberOfFiles);
+        System.out.flush();
         SwingUtilities.invokeLater(() -> {
             numberOfFilesLabel.setText("Founded files: " + numberOfFiles);
         });
