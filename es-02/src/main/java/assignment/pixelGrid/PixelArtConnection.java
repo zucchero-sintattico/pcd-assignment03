@@ -58,21 +58,20 @@ public class PixelArtConnection {
         DeliverCallback newBrushPositionCallback = (consumerTag, delivery) -> {
             String message = new String(delivery.getBody(), "UTF-8");
             System.out.println(" [x] Received POSITION '" + message);
-            /*
+
             String[] parts = message.split(" ");
             // Message: brushId x y color
             UUID brushId = UUID.fromString(parts[0]);
             int newX = Integer.parseInt(parts[1]);
             int newY = Integer.parseInt(parts[2]);
-            int color = Integer.parseInt(parts[3]);
             var brush = brushManager.getBrushMap().keySet().stream().filter(b -> b.equals(brushId)).findFirst();
             brush.ifPresentOrElse(b -> brushManager.getBrushMap().get(brushId).updatePosition(newX, newY),
                     () -> {
-                    var newBrush = new BrushManager.Brush(newX, newY, color);
+                    var newBrush = new BrushManager.Brush(newX, newY, 0);
                     brushManager.getBrushMap().put(brushId, newBrush);
             });
 
-             */
+
         };
         channel.basicConsume("NewPosition", true, newBrushPositionCallback, consumerTag -> {});
     }
@@ -81,13 +80,11 @@ public class PixelArtConnection {
         DeliverCallback disconnectCallback = (consumerTag, delivery) -> {
             String message = new String(delivery.getBody(), "UTF-8");
             System.out.println(" -DELETE '" + message + "' by thread "+Thread.currentThread().getName());
-            /*
+
             String[] parts = message.split(" ");
             // Message: brushId
             UUID brushId = UUID.fromString(parts[0]);
             brushManager.getBrushMap().remove(brushId);
-
-             */
         };
         channel.basicConsume("Disconnect", true, disconnectCallback, consumerTag -> {});
     }
