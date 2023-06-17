@@ -20,18 +20,23 @@ public class PixelArtConnection {
     private Connection connection;
     private int delayTicks = 0;
 
-    private PixelArtNode node;
+    private final PixelArtNode node;
 
-    public PixelArtConnection(PixelArtNode node) throws IOException, TimeoutException {
+    public PixelArtConnection(PixelArtNode node) {
         this.node = node;
     }
 
-    public void setUpConnection() throws IOException, TimeoutException {
+    public void setUpConnection(){
         ConnectionFactory factory = new ConnectionFactory();
         factory.setHost("localhost");
-        this.connection = factory.newConnection();
-        this.channel = connection.createChannel();
-        this.declareQueues();
+        try {
+            this.connection = factory.newConnection();
+            this.channel = connection.createChannel();
+            this.declareQueues();
+        } catch (IOException | TimeoutException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
     private void declareQueues() throws IOException {
@@ -52,13 +57,13 @@ public class PixelArtConnection {
     }
 
     public void defineCallbacks() throws IOException {
-        this.defineNewPositionCallback(this.node.getBrushManager());
-        this.defineNewColorCallback(this.node.getGrid(), this.node.getView());
-        this.defineDisconnectCallback(this.node.getBrushManager());
+        this.defineNewBrushPositionCallback(this.node.getBrushManager());
+        this.definePixelUpdateCallback(this.node.getGrid(), this.node.getView());
+        this.defineUserDisconnectedCallback(this.node.getBrushManager());
     }
 
 
-    private void defineNewColorCallback(PixelGrid grid, PixelGridView view) {
+    private void definePixelUpdateCallback(PixelGrid grid, PixelGridView view) {
         DeliverCallback newColorCallback = (consumerTag, delivery) -> {
             String message = new String(delivery.getBody(), "UTF-8");
             System.out.println(" [x] Received C '" + message);
@@ -77,7 +82,7 @@ public class PixelArtConnection {
         }
     }
 
-    private void defineNewPositionCallback(BrushManager brushManager) throws IOException {
+    private void defineNewBrushPositionCallback(BrushManager brushManager) throws IOException {
         DeliverCallback newBrushPositionCallback = (consumerTag, delivery) -> {
             String message = new String(delivery.getBody(), "UTF-8");
             //System.out.println(" [x] Received POSITION '" + message);
@@ -100,7 +105,7 @@ public class PixelArtConnection {
         this.channel.basicConsume(this.newPositionQueueName, true, newBrushPositionCallback, consumerTag -> {});
     }
 
-    private void defineDisconnectCallback(BrushManager brushManager) throws IOException {
+    private void defineUserDisconnectedCallback(BrushManager brushManager) throws IOException {
         DeliverCallback disconnectCallback = (consumerTag, delivery) -> {
             String message = new String(delivery.getBody(), "UTF-8");
             System.out.println(" -Disconnected '" + message);
@@ -112,7 +117,7 @@ public class PixelArtConnection {
         this.channel.basicConsume(this.disconnectQueueName, true, disconnectCallback, consumerTag -> {});
     }
 
-    public void sendNewColorToBroker(UUID id, int x, int y, int color) {
+    public void sendPixelUpdateToBroker(UUID id, int x, int y, int color) {
         try {
             String message = id + " " + x + " " + y + " " + color;
             channel.basicPublish(NEW_COLOR_EXCHANGE_NAME, "", null, message.getBytes("UTF-8"));
@@ -122,7 +127,7 @@ public class PixelArtConnection {
         }
     }
 
-    public void sendNewPositionToBroker(UUID id, int x, int y, int color) {
+    public void sendNewBrushPositionToBroker(UUID id, int x, int y, int color) {
         delayTicks++;
         delayTicks %= 50;
         try {
@@ -136,7 +141,7 @@ public class PixelArtConnection {
         }
     }
 
-    public void sendDisconnectMessageToBroker(UUID uuid) {
+    public void sendUserDisconnectionToBroker(UUID uuid) {
         try {
             String message = uuid.toString();
             channel.basicPublish(DISCONNECT_EXCHANGE_NAME, "", null, message.getBytes("UTF-8"));

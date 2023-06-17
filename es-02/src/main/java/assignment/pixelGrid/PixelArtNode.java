@@ -50,7 +50,7 @@ public class PixelArtNode {
     private void setUpGridViewListeners() {
         gridView.addMouseMovedListener((x, y) -> {
             localBrush.updatePosition(x, y);
-            this.connection.sendNewPositionToBroker(this.uuid, x, y, localBrush.getColor());
+            this.connection.sendNewBrushPositionToBroker(this.uuid, x, y, localBrush.getColor());
            // System.out.println(localBrush.getX() + " " + localBrush.getY());
             gridView.refresh();
         });
@@ -58,7 +58,7 @@ public class PixelArtNode {
         gridView.addPixelGridEventListener((x, y) -> {
             grid.set(x, y, localBrush.getColor());
             System.out.println("---> sending color to broker");
-            this.connection.sendNewColorToBroker(this.uuid, x, y, localBrush.getColor());
+            this.connection.sendPixelUpdateToBroker(this.uuid, x, y, localBrush.getColor());
             gridView.refresh();
             System.out.println("---> done");
         });
