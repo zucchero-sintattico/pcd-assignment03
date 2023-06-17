@@ -1,7 +1,7 @@
 package assignment.actors
 
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy, Terminated}
+import akka.actor.typed.{ActorRef, Behavior, PostStop, SupervisorStrategy, Terminated}
 import assignment.Domain.*
 import assignment.actors.ViewNotificationListeners.Command.Complete
 
@@ -20,9 +20,7 @@ object Algorithm:
     def onDistributionChanged(distribution: Map[Range, Int]): Unit
 
   enum Command:
-    case Stop
     case FileStatistic(statistic: Statistic)
-    private[Algorithm] case Completed
     private[Algorithm] case FolderScannerCompleted
     private[Algorithm] case ReportBuilderCompleted
     private[Algorithm] case NotificationListenerCompleted
@@ -31,7 +29,7 @@ object Algorithm:
 
   def apply(path: Path, reportConfiguration: ReportConfiguration, appListener: AppListener): Behavior[Command] =
     Behaviors.setup { context =>
-      println("Algorithm started")
+
       val notificationListener = context.spawn(ViewNotificationListeners(appListener), "notificationListeners")
       val reportBuilder = context.spawn(ReportBuilder(reportConfiguration, notificationListener), "reportBuilder")
       val folderScanner = context.spawn(FolderScanner(path, context.self), "folderScanner")
@@ -40,7 +38,7 @@ object Algorithm:
       context.watchWith(reportBuilder, ReportBuilderCompleted)
       context.watchWith(notificationListener, NotificationListenerCompleted)
 
-      Behaviors.receiveMessage {
+      Behaviors.receiveMessage[Command] {
         case FolderScannerCompleted =>
           println("FolderScanner completed")
           reportBuilder ! ReportBuilder.Command.Complete
@@ -55,8 +53,11 @@ object Algorithm:
           println(s"FileStatistic: $statistic")
           reportBuilder ! ReportBuilder.Command.AddStatistic(statistic)
           Behaviors.same
-        case Stop =>
-          ??? // TODO
+      }.receiveSignal {
+        case (_, PostStop) =>
+          println("Algorithm stopped")
+          appListener.onStop()
+          Behaviors.stopped
       }
 
     }

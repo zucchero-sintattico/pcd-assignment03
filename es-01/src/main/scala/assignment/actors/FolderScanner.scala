@@ -2,6 +2,7 @@ package assignment.actors
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior, Terminated}
+import assignment.Domain.Statistic
 
 import java.io.File
 import java.nio.file.Path
@@ -10,41 +11,43 @@ import assignment.actors.Algorithm
 
 object FolderScanner:
   enum Command:
-    case Stop
+    private[FolderScanner] case NewFolder(folder: File)
+    private[FolderScanner] case NewFile(file: File)
+    private[FolderScanner] case FileScannerTerminated
+    private[FolderScanner] case FolderScannerTerminated
 
   import Command.*
 
   def apply(path: Path, algorithm: ActorRef[Algorithm.Command]): Behavior[Command] =
     Behaviors.setup { context =>
-      println(s"FolderScanner: ${path.toFile.getName}")
-      val directories = getDirectories(path)
-      val files = getFiles(path)
 
-      var folderScanners = directories.map { directory =>
-        val child = context.spawn(FolderScanner(directory.toPath, algorithm), s"folderScanner-${directory.getName.hashCode}")
-        context.watch(child)
-        child
-      }
+      var directories = getDirectories(path)
+      var files = getFiles(path)
 
-      var fileScanners = files.map { file =>
-        val child = context.spawn(FileScanner(file.toPath, algorithm), s"fileScanner-${file.getName.hashCode}")
-        context.watch(child)
-        child
-      }
+      directories.foreach(context.self ! NewFolder(_))
+      files.foreach(context.self ! NewFile(_))
 
-      if folderScanners.isEmpty && fileScanners.isEmpty then
+      if directories.isEmpty && files.isEmpty then
         Behaviors.stopped
       else
-        Behaviors.receiveMessage[Command] {
-          case Stop =>
-            folderScanners.foreach(context.stop)
-            fileScanners.foreach(context.stop)
+        Behaviors.receiveMessage {
+          case NewFolder(folder) =>
+            val folderScanner = context.spawn(FolderScanner(folder.toPath, algorithm), folder.getName.hashCode.toString)
+            context.watchWith(folderScanner, FolderScannerTerminated)
             Behaviors.same
-        }.receiveSignal {
-          case (_, Terminated(ref: ActorRef[_])) =>
-            folderScanners = folderScanners.filterNot(_ == ref)
-            fileScanners = fileScanners.filterNot(_ == ref)
-            if folderScanners.isEmpty && fileScanners.isEmpty then
+          case NewFile(file) =>
+            val fileScanner = context.spawn(FileScanner(file.toPath, algorithm), file.getName.hashCode.toString)
+            context.watchWith(fileScanner, FileScannerTerminated)
+            Behaviors.same
+          case FileScannerTerminated =>
+            files = files.tail
+            if files.isEmpty && directories.isEmpty then
+              Behaviors.stopped
+            else
+              Behaviors.same
+          case FolderScannerTerminated =>
+            directories = directories.tail
+            if files.isEmpty && directories.isEmpty then
               Behaviors.stopped
             else
               Behaviors.same
