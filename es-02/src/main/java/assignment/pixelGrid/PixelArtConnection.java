@@ -79,8 +79,7 @@ public class PixelArtConnection {
     private void defineDisconnectCallback(BrushManager brushManager) throws IOException {
         DeliverCallback disconnectCallback = (consumerTag, delivery) -> {
             String message = new String(delivery.getBody(), "UTF-8");
-            System.out.println(" -DELETE '" + message + "' by thread "+Thread.currentThread().getName());
-
+            System.out.println(" -Disconnected '" + message + "' by thread "+Thread.currentThread().getName());
             String[] parts = message.split(" ");
             // Message: brushId
             UUID brushId = UUID.fromString(parts[0]);
@@ -93,7 +92,7 @@ public class PixelArtConnection {
         try {
             String message = id + " " + x + " " + y + " " + color;
             channel.basicPublish("", "NewColor", null, message.getBytes());
-            System.out.println(" [*] Seend COLOR '" + message + "'");
+            System.out.println(" [*] Sent COLOR '" + message + "'");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
