@@ -15,7 +15,7 @@ object ReportBuilder:
       import Command.*
       val report = new Report(reportConfiguration)
       // fill the distribution map
-      fillDistributionMap(report, reportConfiguration)
+      fillDistributionMap(report)
       Behaviors.receiveMessage {
         case AddStatistic(statistic) =>
           report.statistics = report.statistics :+ statistic
@@ -39,12 +39,11 @@ object ReportBuilder:
               report.distribution = report.distribution.updated(range, report.distribution.apply(range) + 1)
               notifyTo ! ViewNotificationListeners.Command.DistributionChanged(report.distribution)
 
-          println("Added statistic - " + report.statistics.size)
           notifyTo ! ViewNotificationListeners.Command.NumberOfFilesChanged(report.statistics.size)
           Behaviors.same
         case Complete =>
           println("Completed")
-          notifyTo ! ViewNotificationListeners.Command.Complete
+          notifyTo ! ViewNotificationListeners.Command.Complete(report)
           Behaviors.stopped
       }
     }
@@ -54,8 +53,8 @@ object ReportBuilder:
     report.topStatistics = report.topStatistics.sortBy(_.size).reverse
   }
 
-  private def fillDistributionMap(report: Report, configuration: ReportConfiguration): Unit =
-    val rangeSize = configuration.maxLines / configuration.nOfIntervals
-    for i <- 0 until configuration.nOfIntervals do
+  private def fillDistributionMap(report: Report): Unit =
+    val rangeSize = report.configuration.maxLines / report.configuration.nOfIntervals
+    for i <- 0 until report.configuration.nOfIntervals do
       val range = Range(i * rangeSize, (i + 1) * rangeSize)
       report.distribution = report.distribution.updated(range, 0)

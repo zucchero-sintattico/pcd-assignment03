@@ -13,7 +13,7 @@ object Algorithm:
   trait AppListener:
     def onStart(): Unit
     def onStop(): Unit
-    def onComplete(): Unit
+    def onComplete(report: Report): Unit
 
     def onNumberOfFileChanged(numberOfFile: Int): Unit
     def onTopNChanged(topN: List[Statistic]): Unit
@@ -22,8 +22,7 @@ object Algorithm:
   enum Command:
     case FileStatistic(statistic: Statistic)
     private[Algorithm] case FolderScannerCompleted
-    private[Algorithm] case ReportBuilderCompleted
-    private[Algorithm] case NotificationListenerCompleted
+    private[Algorithm] case AllCompleted
 
   import Command.*
 
@@ -31,33 +30,23 @@ object Algorithm:
     Behaviors.setup { context =>
 
       val notificationListener = context.spawn(ViewNotificationListeners(appListener), "notificationListeners")
-      val reportBuilder = context.spawn(ReportBuilder(reportConfiguration, notificationListener), "reportBuilder")
-      val folderScanner = context.spawn(FolderScanner(path, context.self), "folderScanner")
+      context.watchWith(notificationListener, AllCompleted)
 
+      val folderScanner = context.spawn(FolderScanner(path, context.self), "folderScanner")
       context.watchWith(folderScanner, FolderScannerCompleted)
-      context.watchWith(reportBuilder, ReportBuilderCompleted)
-      context.watchWith(notificationListener, NotificationListenerCompleted)
+
+      val reportBuilder = context.spawn(ReportBuilder(reportConfiguration, notificationListener), "reportBuilder")
+
+      notificationListener ! ViewNotificationListeners.Command.Start
 
       Behaviors.receiveMessage[Command] {
-        case FolderScannerCompleted =>
-          println("FolderScanner completed")
-          reportBuilder ! ReportBuilder.Command.Complete
-          Behaviors.same
-        case ReportBuilderCompleted =>
-          println("ReportBuilder completed")
-          Behaviors.same
-        case NotificationListenerCompleted =>
-          println("NotificationListener completed")
-          Behaviors.stopped
         case FileStatistic(statistic) =>
-          println(s"FileStatistic: $statistic")
           reportBuilder ! ReportBuilder.Command.AddStatistic(statistic)
           Behaviors.same
-      }.receiveSignal {
-        case (_, PostStop) =>
-          println("Algorithm stopped")
-          appListener.onStop()
+        case FolderScannerCompleted =>
+          reportBuilder ! ReportBuilder.Command.Complete
+          Behaviors.same
+        case AllCompleted =>
           Behaviors.stopped
       }
-
     }

@@ -32,7 +32,7 @@ class ControllerImpl extends Controller:
       val appListener = new AppListener:
         override def onStart(): Unit = updateStatus(AlgorithmStatus.RUNNING)
         override def onStop(): Unit = updateStatus(AlgorithmStatus.STOPPED)
-        override def onComplete(): Unit = updateStatus(AlgorithmStatus.FINISHED)
+        override def onComplete(report: Report): Unit = updateStatus(AlgorithmStatus.FINISHED)
 
         override def onNumberOfFileChanged(numberOfFile: Int): Unit =
           view.updateNumberOfFiles(numberOfFile)
@@ -44,12 +44,8 @@ class ControllerImpl extends Controller:
           view.updateDistribution(distribution.asInstanceOf[Map[Range, Integer]].asJava)
 
       system ! System.Command.StartAlgorithm(path, reportConfiguration, appListener)
-      status = AlgorithmStatus.RUNNING
-      view.updateAlgorithmStatus(status)
 
 
   override def stopAlgorithm(): Unit =
     if status == AlgorithmStatus.RUNNING then
       system ! System.Command.StopAlgorithm
-      status = AlgorithmStatus.STOPPED
-      view.updateAlgorithmStatus(status)

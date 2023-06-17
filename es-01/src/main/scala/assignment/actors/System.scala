@@ -1,6 +1,6 @@
 package assignment.actors
 
-import akka.actor.typed.{ActorRef, Behavior}
+import akka.actor.typed.{ActorRef, Behavior, scaladsl}
 import akka.actor.typed.scaladsl.Behaviors
 import assignment.Domain.ReportConfiguration
 import assignment.actors.Algorithm.AppListener
@@ -16,16 +16,17 @@ object System:
 
   def apply(): Behavior[Command] =
     Behaviors.setup { context =>
-      var algorithm: Option[ActorRef[Algorithm.Command]] = None
+      var listener: Option[AppListener] = None
       Behaviors.receiveMessage {
         case Command.StartAlgorithm(path, reportConfiguration, appListener) =>
-          algorithm = Some(context.spawn(Algorithm(path, reportConfiguration, appListener), "algorithm"))
-          context.watchWith(algorithm.get, Command.AlgorithmCompleted)
+          if context.child("algorithm").isEmpty then
+            val algorithm = context.spawn(Algorithm(path, reportConfiguration, appListener), "algorithm")
+            context.watchWith(algorithm, Command.AlgorithmCompleted)
+            listener = Some(appListener)
           Behaviors.same
         case Command.StopAlgorithm =>
-          println("System: Stopping algorithm")
-          algorithm.foreach(context.stop)
-          algorithm = None
+          context.child("algorithm").foreach(context.stop)
+          listener.foreach(_.onStop())
           Behaviors.same
         case Command.AlgorithmCompleted =>
           Behaviors.same
