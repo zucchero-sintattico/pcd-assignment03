@@ -19,7 +19,6 @@ public class PixelArtConnection {
     private String userDisconnectionExchangeName;
     private String sessionId;
     private String userId;
-
     private String newBrushPositionQueueName;
     private String newPixelUpdateQueueName;
     private String userDisconnectionQueueName;
