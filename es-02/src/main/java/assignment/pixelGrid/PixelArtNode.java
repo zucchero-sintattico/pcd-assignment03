@@ -10,8 +10,25 @@ public class PixelArtNode {
     private BrushManager brushManager;
     private BrushManager.Brush localBrush;
     private PixelGrid grid;
-    private final PixelArtConnection connection = new PixelArtConnection();
+
+    private PixelGridView view;
+    private final PixelArtConnection connection = new PixelArtConnection(this);
     private final UUID uuid = UUID.randomUUID();
+
+    public PixelArtNode() throws IOException, TimeoutException {
+    }
+
+
+    public PixelGrid getGrid(){
+        return this.grid;
+    }
+    public PixelGridView getView(){
+        return this.view;
+    }
+
+    public BrushManager getBrushManager() {
+        return brushManager;
+    }
 
     public static int randomColor() {
         Random rand = new Random();
@@ -22,21 +39,23 @@ public class PixelArtNode {
         this.brushManager = new BrushManager();
         this.localBrush = new BrushManager.Brush(0, 0, randomColor());
         this.brushManager.addBrush(this.uuid, localBrush);
-        PixelGridView view = setUpGrid();
+        this.view = setUpGrid();
         this.connection.setUpConnection();
-        this.connection.defineCallbacks(this.grid, this.brushManager);
+        this.connection.defineCallbacks();
 
         view.addMouseMovedListener((x, y) -> {
             localBrush.updatePosition(x, y);
-            this.connection.sendNewPositionToBroker(this.uuid, x, y);
+            this.connection.sendNewPositionToBroker(this.uuid, x, y, localBrush.getColor());
            // System.out.println(localBrush.getX() + " " + localBrush.getY());
             view.refresh();
         });
 
         view.addPixelGridEventListener((x, y) -> {
             grid.set(x, y, localBrush.getColor());
+            System.out.println("---> sending color to broker");
             this.connection.sendNewColorToBroker(this.uuid, x, y, localBrush.getColor());
             view.refresh();
+            System.out.println("---> done");
         });
 
         view.addColorChangedListener(localBrush::setColor);
