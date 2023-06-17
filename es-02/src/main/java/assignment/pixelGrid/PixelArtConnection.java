@@ -20,20 +20,24 @@ public class PixelArtConnection {
         factory.setHost("localhost");
         this.connection = factory.newConnection();
         this.channel = connection.createChannel();
-        channel.queueDeclare("NewPosition", false, false, false, null);
-        channel.queueDeclare("NewColor", false, false, false, null);
-        channel.queueDeclare("Disconnect", false, false, false, null);
+        this.declareQueues();
+    }
+
+    private void declareQueues() throws IOException {
+        this.channel.queueDeclare("NewPosition", false, false, false, null);
+        this.channel.queueDeclare("NewColor", false, false, false, null);
+        this.channel.queueDeclare("Disconnect", false, false, false, null);
     }
 
     public void closeConnection() throws IOException, TimeoutException {
-        channel.close();
-        connection.close();
+        this.channel.close();
+        this.connection.close();
     }
 
     public void defineCallbacks(PixelGrid grid, BrushManager brushManager) throws IOException {
-        defineNewPositionCallback(brushManager);
-        defineNewColorCallback(grid);
-        defineDisconnectCallback(brushManager);
+        this.defineNewPositionCallback(brushManager);
+        this.defineNewColorCallback(grid);
+        this.defineDisconnectCallback(brushManager);
     }
 
 
