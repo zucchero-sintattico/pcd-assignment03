@@ -24,3 +24,16 @@ java {
     targetCompatibility = JavaVersion.VERSION_11
 }
 
+// Run task, forward argument passed to gradle to GUI
+tasks.register<JavaExec>("run") {
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("assignment.MainGUI")
+}
+
+for (i in 2..10) {
+    tasks.register<JavaExec>("run$i") {
+        classpath = sourceSets["main"].runtimeClasspath
+        mainClass.set("assignment.MainGUI")
+        args(i.toString())
+    }
+}

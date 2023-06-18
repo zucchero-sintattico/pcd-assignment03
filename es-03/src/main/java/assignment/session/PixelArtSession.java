@@ -29,7 +29,7 @@ public class PixelArtSession implements Session {
     }
 
     private void log(String message) {
-        System.out.println("[Server] " + message);
+        System.out.println("[Session:" + this.sessionId + "] " + message);
     }
 
     @Override
