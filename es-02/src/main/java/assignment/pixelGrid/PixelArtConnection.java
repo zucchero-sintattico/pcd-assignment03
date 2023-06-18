@@ -3,6 +3,7 @@ package assignment.pixelGrid;
 import com.rabbitmq.client.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
@@ -24,10 +25,8 @@ public class PixelArtConnection {
     private Connection connection;
     private int delayTicks = 0;
     private final PixelArtNode node;
-
-    private Boolean inSync = false;
-
-    private List<PixelInfo> pixelInfoBuffer;
+    private Boolean isSync = false;
+    private final List<PixelInfo> pixelInfoBuffer = new ArrayList<>();
 
     public PixelArtConnection(PixelArtNode node) {
         this.node = node;
@@ -39,7 +38,6 @@ public class PixelArtConnection {
         System.out.println("Setting up connection");
         ConnectionFactory factory = new ConnectionFactory();
         factory.setHost("localhost");
-
         try {
             this.connection = factory.newConnection();
             this.channel = connection.createChannel();
@@ -48,6 +46,7 @@ public class PixelArtConnection {
             System.out.println("defining callbacks");
             this.defineCallbacks();
 
+            // If it's a join, send a message to the server
             if(!this.node.newSession){
                 System.out.println("waiting for session grid");
                 this.waitSessionGrid();
@@ -66,7 +65,7 @@ public class PixelArtConnection {
                 // Get the grid from the server
                 this.node.setGrid(PixelGrid.createFromString(gridState));
                 this.pixelInfoBuffer.forEach(pixelInfo -> this.node.getGrid().set(pixelInfo.getX(), pixelInfo.getY(), pixelInfo.getColor()));
-                this.inSync = true;
+                this.isSync = true;
                 // Start to listen to new requests
                 this.channel.queueDeclare(this.sessionId, false, false, false, null);
                 this.channel.basicConsume(this.sessionId, true, (c, d) ->{
@@ -152,7 +151,7 @@ public class PixelArtConnection {
         DeliverCallback newBrushPositionCallback = (consumerTag, delivery) -> {
 
             // while not inSync, add messages to buffer
-            if (!inSync && !this.node.newSession) {
+            if (!isSync && !this.node.newSession) {
                 String message = new String(delivery.getBody(), "UTF-8");
                 String[] parts = message.split(" ");
                 int x = Integer.parseInt(parts[1]);

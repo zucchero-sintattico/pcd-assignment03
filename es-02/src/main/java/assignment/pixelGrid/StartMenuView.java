@@ -25,6 +25,7 @@ public class StartMenuView extends JFrame {
                     JOptionPane.showMessageDialog(this, "Please insert a session ID");
                 } else {
                     new PixelArtNode(sessionIdField.getText(), true);
+                    this.setVisible(false);
                 }
             } catch (IOException | TimeoutException ioException) {
                 ioException.printStackTrace();
@@ -36,7 +37,12 @@ public class StartMenuView extends JFrame {
             if (sessionIdField.getText().equals("Session ID")) {
                 JOptionPane.showMessageDialog(this, "Please insert a session ID");
             } else {
-                //
+                try {
+                    new PixelArtNode(sessionIdField.getText(), false);
+                    this.setVisible(false);
+                } catch (IOException | TimeoutException ex) {
+                    throw new RuntimeException(ex);
+                }
             }
         });
 
