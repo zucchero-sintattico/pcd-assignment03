@@ -1,9 +1,6 @@
 package assignment.pixelGrid;
 
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.client.DeliverCallback;
+import com.rabbitmq.client.*;
 
 import java.io.IOException;
 import java.util.List;
@@ -13,11 +10,11 @@ import java.util.concurrent.TimeoutException;
 public class PixelArtConnection {
     private static final String NEW_BRUSH_POSITION_EXCHANGE_POSTFIX = "NewBrushPosition";
     private static final String NEW_PIXEL_POSITION_EXCHANGE_POSTFIX = "NewPixelUpdate";
-    private static final String USER_DISCONNECTION_EXCHANGE_POSTFIX = "User Disconnection";
+    private static final String USER_DISCONNECTION_EXCHANGE_POSTFIX = "UserDisconnection";
 
-    private String newBrushPositionExchangeName;
-    private String newPixelUpdateExchangeName;
-    private String userDisconnectionExchangeName;
+    private String newBrushPositionExch;
+    private String newPixelUpdateExch;
+    private String userDisconnectionExch;
     private String sessionId;
     private String userId;
     private String newBrushPositionQueueName;
@@ -39,14 +36,23 @@ public class PixelArtConnection {
     public void setUpConnection(String sessionId, String userId){
         this.userId = userId;
         this.sessionId = sessionId;
+        System.out.println("Setting up connection");
         ConnectionFactory factory = new ConnectionFactory();
         factory.setHost("localhost");
+
         try {
             this.connection = factory.newConnection();
             this.channel = connection.createChannel();
+            System.out.println("declaring queues");
             this.declareQueues();
+            System.out.println("defining callbacks");
             this.defineCallbacks();
-            this.waitSessionGrid();
+
+            if(!this.node.newSession){
+                System.out.println("waiting for session grid");
+                this.waitSessionGrid();
+            }
+            //this.waitSessionGrid();
         } catch (IOException | TimeoutException e) {
             throw new RuntimeException(e);
         }
@@ -83,19 +89,25 @@ public class PixelArtConnection {
     }
 
     private void declareQueues() throws IOException {
-        this.newBrushPositionExchangeName = this.sessionId + NEW_BRUSH_POSITION_EXCHANGE_POSTFIX;
-        this.newPixelUpdateExchangeName = this.sessionId + NEW_PIXEL_POSITION_EXCHANGE_POSTFIX;
-        this.userDisconnectionExchangeName = this.sessionId + USER_DISCONNECTION_EXCHANGE_POSTFIX;
+        this.newBrushPositionExch = this.sessionId +"_"+ NEW_BRUSH_POSITION_EXCHANGE_POSTFIX;
+        this.newPixelUpdateExch = this.sessionId +"_"+ NEW_PIXEL_POSITION_EXCHANGE_POSTFIX;
+        this.userDisconnectionExch = this.sessionId +"_"+ USER_DISCONNECTION_EXCHANGE_POSTFIX;
+
+        System.out.println("--> Declaring exchanges:\n\t" + this.newBrushPositionExch + "\n\t" + this.newPixelUpdateExch + "\n\t" + this.userDisconnectionExch);
         try {
-            channel.exchangeDeclare(this.newPixelUpdateQueueName, "fanout");
+            channel.exchangeDeclare(this.newPixelUpdateExch, "fanout");
             this.newPixelUpdateQueueName = channel.queueDeclare().getQueue();
-            channel.queueBind(this.newPixelUpdateQueueName, this.newPixelUpdateExchangeName, "");
-            channel.exchangeDeclare(this.newBrushPositionExchangeName, "fanout");
+            channel.queueBind(this.newPixelUpdateQueueName, this.newPixelUpdateExch, "");
+
+            channel.exchangeDeclare(this.newBrushPositionExch, "fanout");
             this.newBrushPositionQueueName = channel.queueDeclare().getQueue();
-            channel.queueBind(this.newBrushPositionQueueName, this.newBrushPositionExchangeName, "");
-            channel.exchangeDeclare(userDisconnectionExchangeName, "fanout");
+            channel.queueBind(this.newBrushPositionQueueName, this.newBrushPositionExch, "");
+
+            channel.exchangeDeclare(userDisconnectionExch, "fanout");
             this.userDisconnectionQueueName = channel.queueDeclare().getQueue();
-            channel.queueBind(this.userDisconnectionQueueName, userDisconnectionExchangeName, "");
+            channel.queueBind(this.userDisconnectionQueueName, userDisconnectionExch, "");
+
+            System.out.println("--> Done");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -140,7 +152,7 @@ public class PixelArtConnection {
         DeliverCallback newBrushPositionCallback = (consumerTag, delivery) -> {
 
             // while not inSync, add messages to buffer
-            if (!inSync) {
+            if (!inSync && !this.node.newSession) {
                 String message = new String(delivery.getBody(), "UTF-8");
                 String[] parts = message.split(" ");
                 int x = Integer.parseInt(parts[1]);
@@ -152,7 +164,7 @@ public class PixelArtConnection {
 
             //
             String message = new String(delivery.getBody(), "UTF-8");
-            //System.out.println(" [x] Received POSITION '" + message);
+            System.out.println(" [x] Received POSITION '" + message);
             String[] parts = message.split(" ");
             // Message: brushId x y color
             UUID brushId = UUID.fromString(parts[0]);
@@ -189,10 +201,13 @@ public class PixelArtConnection {
      */
     public void sendPixelUpdateToBroker(UUID id, int x, int y, int color) {
         try {
+            System.out.println("Sending pixel update to broker");
             String message = id + " " + x + " " + y + " " + color;
-            channel.basicPublish(NEW_PIXEL_POSITION_EXCHANGE_POSTFIX, "", null, message.getBytes("UTF-8"));
+            System.out.println("Sending message: "+message);
+            channel.basicPublish(this.sessionId+"_"+NEW_PIXEL_POSITION_EXCHANGE_POSTFIX, "", null, message.getBytes("UTF-8"));
             System.out.println(" [*] Sent COLOR '" + message + "'");
-        } catch (IOException e) {
+        } catch (Exception e) {
+            System.out.println("[!!]-> Error sending pixel update to broker");
             throw new RuntimeException(e);
         }
     }
@@ -203,7 +218,7 @@ public class PixelArtConnection {
         try {
             if (delayTicks == 0) {
                 String message = id + " " + x + " " + y + " " + color;
-                channel.basicPublish(NEW_BRUSH_POSITION_EXCHANGE_POSTFIX, "", null, message.getBytes("UTF-8"));
+                channel.basicPublish(newBrushPositionExch, "", null, message.getBytes("UTF-8"));
                 System.out.println(" [*] Sent POSITION '" + message + "'");
             }
         } catch (IOException e) {
@@ -214,18 +229,10 @@ public class PixelArtConnection {
     public void sendUserDisconnectionToBroker(UUID uuid) {
         try {
             String message = uuid.toString();
-            channel.basicPublish(USER_DISCONNECTION_EXCHANGE_POSTFIX, "", null, message.getBytes("UTF-8"));
+            channel.basicPublish(this.sessionId+"_"+USER_DISCONNECTION_EXCHANGE_POSTFIX, "", null, message.getBytes("UTF-8"));
             System.out.println(" [*] Sent DISCONNECT'" + message + "'");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-
-
-    public void defineBufferSyncCallback(List[] buffer) {
-        // consume from buffer list and apply to grid
-
-
-
     }
 }

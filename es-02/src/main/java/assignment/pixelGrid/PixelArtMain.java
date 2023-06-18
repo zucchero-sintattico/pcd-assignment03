@@ -5,11 +5,10 @@ import java.util.concurrent.TimeoutException;
 
 public class PixelArtMain {
 
-
-
 	public static void main(String[] args) throws IOException, TimeoutException {
-		PixelArtNode node = new PixelArtNode();
-		node.start();
+		final StartMenuView startMenuView = new StartMenuView();
+		//PixelArtNode node = new PixelArtNode("no_id");
+		//node.start();
 	}
 
 }

@@ -1,7 +1,6 @@
 package assignment.pixelGrid;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
@@ -12,12 +11,23 @@ public class PixelArtNode {
     private BrushManager.Brush localBrush;
     private PixelGrid grid;
 
+    private String sessionId;
+    Boolean newSession;
+
     private final PixelArtConnection connection = new PixelArtConnection(this);
     private final UUID uuid = UUID.randomUUID();
-    private final StartMenuView startMenuView = new StartMenuView();
     private PixelGridView gridView;
 
     public PixelArtNode() throws IOException, TimeoutException {
+    }
+
+    public void setNodeSession(String sessionId, Boolean newSession){
+        this.sessionId = sessionId;
+        this.newSession = newSession;
+    }
+    public PixelArtNode(String sessionId,Boolean newSession) throws IOException, TimeoutException {
+        this.setNodeSession(sessionId, newSession);
+        this.start(sessionId);
     }
 
 
@@ -37,16 +47,17 @@ public class PixelArtNode {
         return rand.nextInt(256 * 256 * 256);
     }
 
-    public void start() {
+    public void start(final String sessionId) throws IOException, TimeoutException {
         this.brushManager = new BrushManager();
         this.localBrush = new BrushManager.Brush(0, 0, randomColor());
         this.brushManager.addBrush(this.uuid, localBrush);
+        this.setupSession(sessionId);
+        this.setUpGridViewListeners();
     }
 
-    private void setUpMatch(String sessionId) throws IOException, TimeoutException {
+    private void setupSession(String sessionId) throws IOException, TimeoutException {
         this.gridView = setUpGrid();
         this.connection.setUpConnection(sessionId, this.uuid.toString());
-
         gridView.display();
     }
 
