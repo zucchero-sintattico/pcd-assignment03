@@ -1,16 +1,15 @@
 package assignment;
 
-import assignment.client.PixelArtClient;
+import assignment.controller.Controller;
+import assignment.controller.PixelArtController;
 
 import java.util.List;
-
-import static java.rmi.registry.LocateRegistry.getRegistry;
 
 public class Main {
 
     public static void main(String[] args) throws InterruptedException {
 
-        final List<PixelArtController> controllers = List.of(
+        final List<Controller> controllers = List.of(
                 new PixelArtController(),
                 new PixelArtController(),
                 new PixelArtController()
@@ -21,6 +20,8 @@ public class Main {
                 .skip(1)
                 .forEach(controller -> controller.join(sessionId));
 
-        controllers.forEach(PixelArtController::leave);
+        controllers.forEach(controller -> controller.updateMousePosition(1, 1));
+        controllers.forEach(controller -> controller.updatePixel(1, 1, 0));
+        controllers.forEach(Controller::leave);
     }
 }

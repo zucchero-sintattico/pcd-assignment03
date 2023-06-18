@@ -2,16 +2,19 @@ package assignment.model;
 
 import assignment.utils.Position;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.Serializable;
+import java.util.*;
 
-public class ModelImpl implements Model {
+public class ModelImpl implements Model, Serializable {
 
-    private int[][] grid = new int[100][100];
     private final List<String> clients = new ArrayList<>();
-    private final Map<String, Position> clientMap = new HashMap<>();
+    private final Map<String, Position> clientsMouse = new HashMap<>();
+    private int[][] grid = new int[100][100];
+
+    @Override
+    public List<String> getPlayers() {
+        return Collections.unmodifiableList(clients);
+    }
 
     @Override
     public int[][] getGrid() {
@@ -37,7 +40,7 @@ public class ModelImpl implements Model {
 
     @Override
     public void updateMousePosition(String clientId, int x, int y) {
-        clientMap.put(clientId, new Position(x, y));
+        clientsMouse.put(clientId, new Position(x, y));
     }
 
     @Override

@@ -1,6 +1,10 @@
 package assignment.model;
 
+import java.util.List;
+
 public interface Model {
+
+    List<String> getPlayers();
 
     int[][] getGrid();
 

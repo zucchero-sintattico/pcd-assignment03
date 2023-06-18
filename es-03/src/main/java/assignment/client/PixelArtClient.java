@@ -1,8 +1,8 @@
 package assignment.client;
 
-import assignment.session.Session;
-import assignment.session.PixelArtSession;
 import assignment.model.Model;
+import assignment.session.PixelArtSession;
+import assignment.session.Session;
 import assignment.utils.MousePosition;
 import assignment.utils.PixelInfo;
 
@@ -21,10 +21,11 @@ public class PixelArtClient implements ObservableClient, RemoteClient {
     private Model model;
     private Session session;
 
-    private Consumer<String> newClientHandler;
-    private Consumer<String> clientLeftHandler;
-    private Consumer<MousePosition> mousePositionHandler;
-    private Consumer<PixelInfo> pixelInfoHandler;
+    private Consumer<Model> modelHandler = x -> {};
+    private Consumer<String> newClientHandler = x -> {};
+    private Consumer<String> clientLeftHandler = x -> {};
+    private Consumer<MousePosition> mousePositionHandler = x -> {};
+    private Consumer<PixelInfo> pixelInfoHandler = x -> {};
 
 
     public PixelArtClient() {
@@ -39,6 +40,11 @@ public class PixelArtClient implements ObservableClient, RemoteClient {
     @Override
     public String getID() {
         return this.id;
+    }
+
+    @Override
+    public Model getModel() {
+        return this.model;
     }
 
     @Override
@@ -101,7 +107,9 @@ public class PixelArtClient implements ObservableClient, RemoteClient {
 
     @Override
     public void onModel(Model model) throws RemoteException {
+        this.log("Received model");
         this.model = model;
+        this.modelHandler.accept(model);
     }
 
     @Override
@@ -134,6 +142,12 @@ public class PixelArtClient implements ObservableClient, RemoteClient {
 
     private void log(String message) {
         System.out.println("[" + this.id + "] " + message);
+    }
+
+
+    @Override
+    public void setOnModelReadyListener(Consumer<Model> modelListener) {
+        this.modelHandler = modelListener;
     }
 
     @Override

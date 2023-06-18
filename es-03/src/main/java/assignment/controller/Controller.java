@@ -1,12 +1,10 @@
-package assignment.client;
+package assignment.controller;
 
-import assignment.model.Model;
+import assignment.view.View;
 
-public interface Client {
+public interface Controller {
 
-    String getID();
-
-    Model getModel();
+    void setView(View view);
 
     void join(String sessionId);
 

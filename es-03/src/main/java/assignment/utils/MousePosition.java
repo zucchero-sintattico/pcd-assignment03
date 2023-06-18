@@ -1,9 +1,9 @@
 package assignment.utils;
 
 public class MousePosition {
-    public String clientId;
     public final int x;
     public final int y;
+    public String clientId;
 
     public MousePosition(String clientId, int x, int y) {
         this.clientId = clientId;
