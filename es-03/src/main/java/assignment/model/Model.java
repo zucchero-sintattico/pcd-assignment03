@@ -2,6 +2,8 @@ package assignment.model;
 
 public interface Model {
 
+    int[][] getGrid();
+
     void setGrid(int[][] grid);
 
     void addClient(String clientId);

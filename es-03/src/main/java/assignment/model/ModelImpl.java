@@ -14,6 +14,11 @@ public class ModelImpl implements Model {
     private final Map<String, Position> clientMap = new HashMap<>();
 
     @Override
+    public int[][] getGrid() {
+        return grid;
+    }
+
+    @Override
     public void setGrid(int[][] grid) {
         this.grid = grid;
     }

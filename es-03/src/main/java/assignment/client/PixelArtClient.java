@@ -3,24 +3,32 @@ package assignment.client;
 import assignment.session.Session;
 import assignment.session.PixelArtSession;
 import assignment.model.Model;
+import assignment.utils.MousePosition;
+import assignment.utils.PixelInfo;
 
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 import static java.rmi.registry.LocateRegistry.getRegistry;
 
-public class PixelArtClient implements Client, RemoteClient {
+public class PixelArtClient implements ObservableClient, RemoteClient {
     private final Registry registry;
     private final String id;
-    private final Model model;
+    private Model model;
     private Session session;
 
-    public PixelArtClient(final Model model) {
+    private Consumer<String> newClientHandler;
+    private Consumer<String> clientLeftHandler;
+    private Consumer<MousePosition> mousePositionHandler;
+    private Consumer<PixelInfo> pixelInfoHandler;
+
+
+    public PixelArtClient() {
         this.id = UUID.randomUUID().toString();
-        this.model = model;
         try {
             registry = getRegistry();
         } catch (RemoteException e) {
@@ -92,36 +100,59 @@ public class PixelArtClient implements Client, RemoteClient {
     }
 
     @Override
-    public void onGrid(int[][] grid) throws RemoteException {
-        this.log("Received grid");
-        this.model.setGrid(grid);
+    public void onModel(Model model) throws RemoteException {
+        this.model = model;
     }
 
     @Override
     public void onNewClient(String clientId) throws RemoteException {
         this.log("Received new client: " + clientId);
         this.model.addClient(clientId);
+        this.newClientHandler.accept(clientId);
     }
 
     @Override
     public void onClientLeft(String clientId) throws RemoteException {
         this.log("Received client left: " + clientId);
         this.model.removeClient(clientId);
+        this.clientLeftHandler.accept(clientId);
     }
 
     @Override
     public void onNewPosition(String clientId, int x, int y) throws RemoteException {
         this.log("Received new position for client: " + clientId);
         this.model.updateMousePosition(clientId, x, y);
+        this.mousePositionHandler.accept(new MousePosition(clientId, x, y));
     }
 
     @Override
     public void onPixelUpdated(int x, int y, int color) throws RemoteException {
         this.log("Received pixel update: " + x + ", " + y + ", " + color);
         this.model.updatePixel(x, y, color);
+        this.pixelInfoHandler.accept(new PixelInfo(x, y, color));
     }
 
     private void log(String message) {
         System.out.println("[" + this.id + "] " + message);
+    }
+
+    @Override
+    public void setOnUserJoinListener(Consumer<String> onUserJoinListener) {
+        this.newClientHandler = onUserJoinListener;
+    }
+
+    @Override
+    public void setOnUserLeaveListener(Consumer<String> onUserLeaveListener) {
+        this.clientLeftHandler = onUserLeaveListener;
+    }
+
+    @Override
+    public void setOnNewMousePositionListener(Consumer<MousePosition> onNewMousePositionListener) {
+        this.mousePositionHandler = onNewMousePositionListener;
+    }
+
+    @Override
+    public void setOnPixelUpdatedListener(Consumer<PixelInfo> onPixelUpdatedListener) {
+        this.pixelInfoHandler = onPixelUpdatedListener;
     }
 }

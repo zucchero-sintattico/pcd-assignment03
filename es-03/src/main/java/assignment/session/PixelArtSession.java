@@ -40,6 +40,7 @@ public class PixelArtSession implements Session {
     @Override
     public synchronized void registerClient(String clientId) throws RemoteException {
         this.log("Registering new client: " + clientId);
+        this.model.addClient(clientId);
         try {
             RemoteClient remoteClient = (RemoteClient) registry.lookup(clientId);
             clients.values().forEach(x -> {
@@ -50,6 +51,7 @@ public class PixelArtSession implements Session {
                 }
             });
             clients.put(clientId, remoteClient);
+            remoteClient.onModel(this.model);
         } catch (NotBoundException e) {
             e.printStackTrace();
         }
@@ -59,6 +61,7 @@ public class PixelArtSession implements Session {
     @Override
     public synchronized void unregisterClient(String clientId) throws RemoteException {
         this.log("Unregistering client: " + clientId);
+        this.model.removeClient(clientId);
         clients.remove(clientId);
         clients.values().forEach(x -> {
             try {
@@ -72,6 +75,7 @@ public class PixelArtSession implements Session {
     @Override
     public synchronized void updateMousePosition(String clientId, int x, int y) throws RemoteException {
         this.log("Updating mouse position for client: " + clientId);
+        this.model.updateMousePosition(clientId, x, y);
         clients.values().forEach(client -> {
             try {
                 client.onNewPosition(clientId, x, y);
@@ -84,6 +88,7 @@ public class PixelArtSession implements Session {
     @Override
     public synchronized void updatePixel(int x, int y, int color) throws RemoteException {
         this.log("Updating pixel at (" + x + ", " + y + ") to color " + color);
+        this.model.updatePixel(x, y, color);
         clients.values().forEach(client -> {
             try {
                 client.onPixelUpdated(x, y, color);

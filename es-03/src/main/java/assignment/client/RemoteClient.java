@@ -1,5 +1,7 @@
 package assignment.client;
 
+import assignment.model.Model;
+
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 
@@ -8,7 +10,7 @@ import java.rmi.RemoteException;
  */
 
 public interface RemoteClient extends Remote {
-    void onGrid(int[][] grid) throws RemoteException;
+    void onModel(Model model) throws RemoteException;
 
     void onNewClient(String clientId) throws RemoteException;
 
