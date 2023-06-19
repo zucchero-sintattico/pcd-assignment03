@@ -210,6 +210,7 @@ public class PixelArtConnection {
                     () -> { var newBrush = new BrushManager.Brush(newX, newY, newColor);
                         this.node.getBrushManager().getBrushMap().put(brushId, newBrush);
                     });
+            this.node.getView().refresh();
         };
 
         this.channel.basicConsume(this.newBrushPositionQueueName, true, newBrushPositionCallback, consumerTag -> {});
