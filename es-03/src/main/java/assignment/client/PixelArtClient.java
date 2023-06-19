@@ -37,6 +37,10 @@ public class PixelArtClient implements ObservableClient, RemoteClient {
         }
     }
 
+    private void log(String message) {
+        System.out.println("[" + this.id + "] " + message);
+    }
+
     @Override
     public String getID() {
         return this.id;
@@ -51,7 +55,7 @@ public class PixelArtClient implements ObservableClient, RemoteClient {
     public void join(String sessionId) {
         try {
             // Register client
-            RemoteClient stub = (RemoteClient) UnicastRemoteObject.exportObject(this, 0);
+            final RemoteClient stub = (RemoteClient) UnicastRemoteObject.exportObject(this, 0);
             registry.rebind(this.getID(), stub);
 
             // Register client with server
@@ -68,12 +72,11 @@ public class PixelArtClient implements ObservableClient, RemoteClient {
         final String sessionId = UUID.randomUUID().toString();
         final Session realSession = new PixelArtSession(sessionId);
         try {
-            Session realSessionStub = (Session) UnicastRemoteObject.exportObject(realSession, 0);
+            final Session realSessionStub = (Session) UnicastRemoteObject.exportObject(realSession, 0);
             registry.rebind(sessionId, realSessionStub);
         } catch (RemoteException e) {
             throw new RuntimeException(e);
         }
-        join(sessionId);
         return sessionId;
     }
 
@@ -104,6 +107,8 @@ public class PixelArtClient implements ObservableClient, RemoteClient {
             throw new RuntimeException(e);
         }
     }
+
+    // RemoteClient implementation
 
     @Override
     public void onModel(Model model) throws RemoteException {
@@ -140,10 +145,9 @@ public class PixelArtClient implements ObservableClient, RemoteClient {
         this.pixelInfoHandler.accept(new PixelInfo(x, y, color));
     }
 
-    private void log(String message) {
-        System.out.println("[" + this.id + "] " + message);
-    }
 
+
+    // ObservableClient implementation
 
     @Override
     public void setOnModelReadyListener(Consumer<Model> modelListener) {

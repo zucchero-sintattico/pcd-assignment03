@@ -25,7 +25,9 @@ public class PixelArtController implements Controller {
     @Override
     public String create() {
         this.setupListeners();
-        return this.client.create();
+        final String sessionId = this.client.create();
+        this.client.join(sessionId);
+        return sessionId;
     }
 
     private void setupListeners() {

@@ -1,5 +1,7 @@
 package assignment.pixelGrid;
 
+import assignment.pixelGrid.view.PixelGrid;
+import assignment.pixelGrid.view.PixelGridView;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;

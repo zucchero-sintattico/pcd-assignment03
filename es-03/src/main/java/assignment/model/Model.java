@@ -1,14 +1,20 @@
 package assignment.model;
 
+import assignment.utils.MousePosition;
+import assignment.utils.PixelGrid;
+
 import java.util.List;
+import java.util.Map;
 
 public interface Model {
 
     List<String> getPlayers();
 
-    int[][] getGrid();
+    Map<String, MousePosition> getPlayersMouse();
 
-    void setGrid(int[][] grid);
+    PixelGrid getGrid();
+
+    void setGrid(PixelGrid grid);
 
     void addClient(String clientId);
 

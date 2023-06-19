@@ -1,5 +1,9 @@
 package assignment.pixelGrid;
 
+import assignment.pixelGrid.view.PixelGrid;
+import assignment.pixelGrid.view.PixelGridView;
+import assignment.pixelGrid.view.StartMenuView;
+
 import java.io.IOException;
 import java.util.Random;
 import java.util.UUID;

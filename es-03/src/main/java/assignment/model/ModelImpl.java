@@ -1,5 +1,7 @@
 package assignment.model;
 
+import assignment.utils.MousePosition;
+import assignment.utils.PixelGrid;
 import assignment.utils.Position;
 
 import java.io.Serializable;
@@ -8,8 +10,8 @@ import java.util.*;
 public class ModelImpl implements Model, Serializable {
 
     private final List<String> clients = new ArrayList<>();
-    private final Map<String, Position> clientsMouse = new HashMap<>();
-    private int[][] grid = new int[100][100];
+    private final Map<String, MousePosition> clientsMouse = new HashMap<>();
+    private PixelGrid grid;
 
     @Override
     public List<String> getPlayers() {
@@ -17,12 +19,17 @@ public class ModelImpl implements Model, Serializable {
     }
 
     @Override
-    public int[][] getGrid() {
+    public Map<String, MousePosition> getPlayersMouse() {
+        return Collections.unmodifiableMap(clientsMouse);
+    }
+
+    @Override
+    public PixelGrid getGrid() {
         return grid;
     }
 
     @Override
-    public void setGrid(int[][] grid) {
+    public void setGrid(PixelGrid grid) {
         this.grid = grid;
     }
 
@@ -40,11 +47,11 @@ public class ModelImpl implements Model, Serializable {
 
     @Override
     public void updateMousePosition(String clientId, int x, int y) {
-        clientsMouse.put(clientId, new Position(x, y));
+        clientsMouse.put(clientId, new MousePosition(clientId, x, y));
     }
 
     @Override
     public void updatePixel(int x, int y, int color) {
-        grid[x][y] = color;
+        grid.set(x, y, color);
     }
 }

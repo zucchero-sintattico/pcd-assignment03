@@ -8,7 +8,6 @@ import java.util.function.Consumer;
 
 public interface ObservableClient extends Client {
 
-
     void setOnModelReadyListener(Consumer<Model> onModelReadyListener);
 
     void setOnUserJoinListener(Consumer<String> onUserJoinListener);
