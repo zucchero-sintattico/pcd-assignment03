@@ -12,4 +12,5 @@ public interface Model {
     PixelGridView getView();
     BrushManager getBrushManager();
 
+
 }
