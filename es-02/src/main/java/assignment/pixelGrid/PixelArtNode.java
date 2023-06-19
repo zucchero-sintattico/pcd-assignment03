@@ -79,7 +79,9 @@ public class PixelArtNode {
 
         // add listener for closing the window
         gridView.addWindowClosedListener(() -> {
-            // TODO: send disconnect message to broker
+            System.out.println("Window closed");
+            this.connection.sendUserDisconnectionToBroker(this.uuid);
+            System.exit(0);
         });
         gridView.addColorChangedListener(localBrush::setColor);
     }
@@ -97,7 +99,6 @@ public class PixelArtNode {
                 grid.set(rand.nextInt(40), rand.nextInt(40), randomColor());
             }
         }
-
         return new PixelGridView(grid, brushManager, 800, 800);
     }
 }

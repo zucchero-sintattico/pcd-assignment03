@@ -153,13 +153,13 @@ public class PixelArtConnection {
      */
 
     private void defineCallbacks() throws IOException {
-        this.defineNewBrushPositionCallback(this.node.getBrushManager());
-        this.definePixelUpdateCallback(this.node.getGrid(), this.node.getView());
-        this.defineUserDisconnectedCallback(this.node.getBrushManager());
+        this.defineNewBrushPositionCallback();
+        this.definePixelUpdateCallback();
+        this.defineUserDisconnectedCallback();
     }
 
 
-    private void definePixelUpdateCallback(PixelGrid grid, PixelGridView view) {
+    private void definePixelUpdateCallback() {
         DeliverCallback newColorCallback = (consumerTag, delivery) -> {
             String message = new String(delivery.getBody(), "UTF-8");
             System.out.println(" [x] Received C '" + message);
@@ -167,9 +167,9 @@ public class PixelArtConnection {
             int x = Integer.parseInt(parts[1]);
             int y = Integer.parseInt(parts[2]);
             int color = Integer.parseInt(parts[3]);
-            grid.set(x, y, color);
-            System.out.println("New-Color: "+grid.get(x, y));
-            view.refresh();
+            this.node.getGrid().set(x, y, color);
+            System.out.println("New-Color: "+ this.node.getGrid().get(x, y));
+            this.node.getView().refresh();
         };
         try {
             this.channel.basicConsume(this.newPixelUpdateQueueName, true, newColorCallback, consumerTag -> {});
@@ -178,7 +178,7 @@ public class PixelArtConnection {
         }
     }
 
-    private void defineNewBrushPositionCallback(BrushManager brushManager) throws IOException {
+    private void defineNewBrushPositionCallback() throws IOException {
         DeliverCallback newBrushPositionCallback = (consumerTag, delivery) -> {
 
             // while not inSync, add messages to buffer
@@ -201,27 +201,27 @@ public class PixelArtConnection {
             int newX = Integer.parseInt(parts[1]);
             int newY = Integer.parseInt(parts[2]);
             int newColor = Integer.parseInt(parts[3]);
-            var brush = brushManager.getBrushMap().keySet().stream().filter(b -> b.equals(brushId)).findFirst();
+            var brush = this.node.getBrushManager().getBrushMap().keySet().stream().filter(b -> b.equals(brushId)).findFirst();
             brush.ifPresentOrElse(b -> {
-                                        brushManager.getBrushMap().get(brushId).updatePosition(newX, newY);
-                                        brushManager.getBrushMap().get(brushId).setColor(newColor);
+                        this.node.getBrushManager().getBrushMap().get(brushId).updatePosition(newX, newY);
+                        this.node.getBrushManager().getBrushMap().get(brushId).setColor(newColor);
                     },
                     () -> { var newBrush = new BrushManager.Brush(newX, newY, newColor);
-                            brushManager.getBrushMap().put(brushId, newBrush);
+                        this.node.getBrushManager().getBrushMap().put(brushId, newBrush);
                     });
         };
 
         this.channel.basicConsume(this.newBrushPositionQueueName, true, newBrushPositionCallback, consumerTag -> {});
     }
 
-    private void defineUserDisconnectedCallback(BrushManager brushManager) throws IOException {
+    private void defineUserDisconnectedCallback() throws IOException {
         DeliverCallback disconnectCallback = (consumerTag, delivery) -> {
             String message = new String(delivery.getBody(), "UTF-8");
             System.out.println(" -Disconnected '" + message);
             String[] parts = message.split(" ");
             // Message: brushId
             UUID brushId = UUID.fromString(parts[0]);
-            brushManager.getBrushMap().remove(brushId);
+            this.node.getBrushManager().getBrushMap().remove(brushId);
         };
         this.channel.basicConsume(this.userDisconnectionQueueName, true, disconnectCallback, consumerTag -> {});
     }
@@ -265,4 +265,5 @@ public class PixelArtConnection {
             throw new RuntimeException(e);
         }
     }
+
 }
