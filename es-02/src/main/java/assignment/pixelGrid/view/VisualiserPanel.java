@@ -8,7 +8,7 @@ import java.awt.*;
 public class VisualiserPanel extends JPanel {
     private static final int STROKE_SIZE = 1;
     private final BrushManager brushManager;
-    private final PixelGrid grid;
+    private PixelGrid grid;
     private final int w,h;
 
     public VisualiserPanel(PixelGrid grid, BrushManager brushManager, int w, int h){
@@ -55,5 +55,9 @@ public class VisualiserPanel extends JPanel {
         }
 
         brushManager.draw(g2);
+    }
+    public void setGrid(PixelGrid grid){
+        this.grid.clear();
+        this.grid = grid;
     }
 }

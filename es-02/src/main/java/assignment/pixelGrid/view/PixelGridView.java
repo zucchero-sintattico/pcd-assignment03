@@ -60,6 +60,10 @@ public class PixelGridView extends JFrame {
 			this.setVisible(true);
 		});
     }
+
+	public void setGrid(PixelGrid grid) {
+		panel.setGrid(grid);
+	}
     
     public void addPixelGridEventListener(PixelGridEventListener l) { pixelListeners.add(l); }
 

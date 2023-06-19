@@ -1,6 +1,5 @@
 package assignment.pixelGrid;
 
-import com.rabbitmq.client.*;
 import assignment.pixelGrid.view.PixelGrid;
 import assignment.pixelGrid.view.PixelGridView;
 import com.rabbitmq.client.Channel;
@@ -58,8 +57,6 @@ public class PixelArtConnection {
                 this.waitSessionGrid();
             }
             this.defineSendGridCallback();
-
-            //this.waitSessionGrid();
         } catch (IOException | TimeoutException e) {
             throw new RuntimeException(e);
         }
@@ -79,24 +76,21 @@ public class PixelArtConnection {
 
     }
 
-
-
     private void waitSessionGrid() {
         DeliverCallback deliverCallback = (consumerTag, delivery) -> {
             String gridState = new String(delivery.getBody(), "UTF-8");
             try {
                 // Get the grid from the server
                 System.out.println("Got session grid");
-                //System.out.println(gridState);
+                System.out.println(gridState);
                 this.node.setGrid(PixelGrid.createFromString(gridState));
 
-
+                // Apply the incoming events
                 this.pixelInfoBuffer.forEach(pixelInfo -> this.node.getGrid().set(pixelInfo.getX(), pixelInfo.getY(), pixelInfo.getColor()));
                 this.isSync = true;
-                //System.out.println(this.node.getGrid().toString());
 
-
-                //this.node.getView().refresh();
+                // Refresh the view with the new grid
+                this.node.getView().setGrid(this.node.getGrid());
 
 
             } catch (TimeoutException e) {

@@ -2,7 +2,6 @@ package assignment.pixelGrid;
 
 import assignment.pixelGrid.view.PixelGrid;
 import assignment.pixelGrid.view.PixelGridView;
-import assignment.pixelGrid.view.StartMenuView;
 
 import java.io.IOException;
 import java.util.Random;
@@ -14,7 +13,6 @@ public class PixelArtNode {
     private BrushManager brushManager;
     private BrushManager.Brush localBrush;
     private PixelGrid grid;
-
     private String sessionId;
     Boolean newSession;
 
@@ -22,8 +20,6 @@ public class PixelArtNode {
     private final UUID uuid = UUID.randomUUID();
     private PixelGridView gridView;
 
-    public PixelArtNode() throws IOException, TimeoutException {
-    }
 
     public void setNodeSession(String sessionId, Boolean newSession){
         this.sessionId = sessionId;
@@ -55,11 +51,11 @@ public class PixelArtNode {
         this.brushManager = new BrushManager();
         this.localBrush = new BrushManager.Brush(0, 0, randomColor());
         this.brushManager.addBrush(this.uuid, localBrush);
-        this.setupSession(sessionId);
+        this.setUpSession(sessionId);
         this.setUpGridViewListeners();
     }
 
-    private void setupSession(String sessionId) throws IOException, TimeoutException {
+    private void setUpSession(String sessionId) throws IOException, TimeoutException {
         this.gridView = setUpGrid();
         this.connection.setUpConnection(sessionId, this.uuid.toString());
         gridView.display();
@@ -81,10 +77,6 @@ public class PixelArtNode {
             System.out.println("---> done");
         });
 
-        gridView.addColorChangedListener((int color) -> {
-            this.localBrush.setColor(color);
-            // TODO: send color change to broker
-        });
         // add listener for closing the window
         gridView.addWindowClosedListener(() -> {
             // TODO: send disconnect message to broker
@@ -92,13 +84,6 @@ public class PixelArtNode {
         gridView.addColorChangedListener(localBrush::setColor);
     }
 
-    public void createSession(){
-        // TODO
-    }
-
-    public void joinSession(int sessionId){
-        // TODO
-    }
 
     public void setGrid(PixelGrid grid) {
         this.grid = grid;
