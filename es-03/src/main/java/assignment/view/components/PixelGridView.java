@@ -1,9 +1,10 @@
-package assignment.pixelGrid.view;
+package assignment.view.components;
 
-import assignment.pixelGrid.BrushManager;
-import assignment.pixelGrid.listeners.ColorChangeListener;
-import assignment.pixelGrid.listeners.MouseMovedListener;
-import assignment.pixelGrid.listeners.PixelGridEventListener;
+import assignment.controller.Controller;
+import assignment.utils.PixelGrid;
+import assignment.view.listeners.ColorChangeListener;
+import assignment.view.listeners.MouseMovedListener;
+import assignment.view.listeners.PixelGridEventListener;
 
 import javax.swing.*;
 import java.awt.*;
@@ -13,24 +14,24 @@ import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 
 public class PixelGridView extends JFrame {
+
+	private final Controller controller;
+	private final BrushManager brushManager;
     private final VisualiserPanel panel;
     private final PixelGrid grid;
     private final int w, h;
-    private final List<PixelGridEventListener> pixelListeners;
-	private final List<MouseMovedListener> movedListener;
-	private final List<ColorChangeListener> colorChangeListeners;
     
-    public PixelGridView(PixelGrid grid, BrushManager brushManager, int w, int h){
-		this.grid = grid;
+    public PixelGridView(Controller controller, BrushManager brushManager, int w, int h){
+		this.controller = controller;
+		this.brushManager = brushManager;
+		this.grid = controller.getGrid();
 		this.w = w;
 		this.h = h;
-		pixelListeners = new ArrayList<>();
-		movedListener = new ArrayList<>();
-		colorChangeListeners = new ArrayList<>();
-        setTitle(".:: PixelArt ::.");
+		setTitle(".:: PixelArt ::.");
 		setResizable(false);
         panel = new VisualiserPanel(grid, brushManager, w, h);
         panel.addMouseListener(createMouseListener());
@@ -39,7 +40,7 @@ public class PixelGridView extends JFrame {
 		colorChangeButton.addActionListener(e -> {
 			var color = JColorChooser.showDialog(this, "Choose a color", Color.BLACK);
 			if (color != null) {
-				colorChangeListeners.forEach(l -> l.colorChanged(color.getRGB()));
+				controller.updateUserColor(color.getRGB());
 			}
 		});
 		// add panel and a button to the button to change color
@@ -47,6 +48,12 @@ public class PixelGridView extends JFrame {
 		add(colorChangeButton, BorderLayout.SOUTH);
         getContentPane().add(panel);
 		this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+		this.addWindowListener(new java.awt.event.WindowAdapter() {
+			@Override
+			public void windowClosing(java.awt.event.WindowEvent windowEvent) {
+				controller.leave();
+			}
+		});
 		hideCursor();
     }
     
@@ -64,12 +71,6 @@ public class PixelGridView extends JFrame {
 	public void setGrid(PixelGrid grid) {
 		panel.setGrid(grid);
 	}
-    
-    public void addPixelGridEventListener(PixelGridEventListener l) { pixelListeners.add(l); }
-
-	public void addMouseMovedListener(MouseMovedListener l) { movedListener.add(l); }
-
-	public void addColorChangedListener(ColorChangeListener l) { colorChangeListeners.add(l); }
 
 	private void hideCursor() {
 		var cursorImage = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
@@ -79,6 +80,7 @@ public class PixelGridView extends JFrame {
 		this.getContentPane().setCursor(blankCursor);
 	}
 
+
 	private MouseListener createMouseListener () {
 		return new MouseListener() {
 			@Override
@@ -87,7 +89,8 @@ public class PixelGridView extends JFrame {
 				int dy = h / grid.getNumRows();
 				int col = e.getX() / dx;
 				int row = e.getY() / dy;
-				pixelListeners.forEach(l -> l.selectedCell(col, row));
+				final int color = controller.getUserColor();
+				controller.updatePixel(col, row, color);
 			}
 
 			@Override
@@ -106,13 +109,21 @@ public class PixelGridView extends JFrame {
 
 	private MouseMotionListener createMotionListener() {
 		return new MouseMotionListener() {
+
+			int amountOfEvents = 0;
+			int debounce = 1;
+
 			@Override
 			public void mouseDragged(MouseEvent e) {}
 
 			@Override
 			public void mouseMoved(MouseEvent e) {
-				movedListener.forEach(l -> l.mouseMoved(e.getX(), e.getY()));
+				amountOfEvents = (amountOfEvents + 1) % debounce;
+				if (amountOfEvents == 0) {
+					controller.updateMousePosition(e.getX(), e.getY());
+				}
 			}
 		};
 	}
+
 }

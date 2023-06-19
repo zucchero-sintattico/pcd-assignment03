@@ -67,8 +67,8 @@ public class PixelArtNode {
         gridView.addMouseMovedListener((x, y) -> {
             localBrush.updatePosition(x, y);
             this.connection.sendNewBrushPositionToBroker(this.uuid, x, y, localBrush.getColor());
-           // System.out.println(localBrush.getX() + " " + localBrush.getY());
-            gridView.refresh();
+            // System.out.println(localBrush.getX() + " " + localBrush.getY());
+            //gridView.refresh();
         });
 
         gridView.addPixelGridEventListener((x, y) -> {

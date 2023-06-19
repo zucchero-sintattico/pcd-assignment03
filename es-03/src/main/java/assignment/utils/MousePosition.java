@@ -1,6 +1,8 @@
 package assignment.utils;
 
-public class MousePosition {
+import java.io.Serializable;
+
+public class MousePosition implements Serializable {
     public final int x;
     public final int y;
     public String clientId;

@@ -1,6 +1,7 @@
 package assignment.client;
 
 import assignment.model.Model;
+import assignment.model.ModelImpl;
 import assignment.session.PixelArtSession;
 import assignment.session.Session;
 import assignment.utils.MousePosition;
@@ -10,6 +11,7 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -18,14 +20,21 @@ import static java.rmi.registry.LocateRegistry.getRegistry;
 public class PixelArtClient implements ObservableClient, RemoteClient {
     private final Registry registry;
     private final String id;
-    private Model model;
+    private Model model = new ModelImpl();
     private Session session;
 
-    private Consumer<Model> modelHandler = x -> {};
-    private Consumer<String> newClientHandler = x -> {};
-    private Consumer<String> clientLeftHandler = x -> {};
-    private Consumer<MousePosition> mousePositionHandler = x -> {};
-    private Consumer<PixelInfo> pixelInfoHandler = x -> {};
+    private Consumer<Model> modelHandler = x -> {
+    };
+    private Consumer<Map.Entry<String, Integer>> newClientHandler = x -> {
+    };
+    private Consumer<Map.Entry<String, Integer>> clientColorUpdateHandler = x -> {
+    };
+    private Consumer<String> clientLeftHandler = x -> {
+    };
+    private Consumer<MousePosition> mousePositionHandler = x -> {
+    };
+    private Consumer<PixelInfo> pixelInfoHandler = x -> {
+    };
 
 
     public PixelArtClient() {
@@ -52,7 +61,7 @@ public class PixelArtClient implements ObservableClient, RemoteClient {
     }
 
     @Override
-    public void join(String sessionId) {
+    public void join(String sessionId, int color) {
         try {
             // Register client
             final RemoteClient stub = (RemoteClient) UnicastRemoteObject.exportObject(this, 0);
@@ -60,7 +69,7 @@ public class PixelArtClient implements ObservableClient, RemoteClient {
 
             // Register client with server
             session = (Session) registry.lookup(sessionId);
-            session.registerClient(this.getID());
+            session.registerClient(this.getID(), color);
         } catch (RemoteException | NotBoundException e) {
             throw new RuntimeException(e);
         }
@@ -91,6 +100,15 @@ public class PixelArtClient implements ObservableClient, RemoteClient {
     }
 
     @Override
+    public void updateUserColor(int color) {
+        try {
+            this.session.updateUserColor(this.getID(), color);
+        } catch (RemoteException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public void updateMousePosition(int x, int y) {
         try {
             this.session.updateMousePosition(this.getID(), x, y);
@@ -113,15 +131,15 @@ public class PixelArtClient implements ObservableClient, RemoteClient {
     @Override
     public void onModel(Model model) throws RemoteException {
         this.log("Received model");
-        this.model = model;
+        this.model.copyFrom(model);
         this.modelHandler.accept(model);
     }
 
     @Override
-    public void onNewClient(String clientId) throws RemoteException {
+    public void onNewClient(String clientId, int color) throws RemoteException {
         this.log("Received new client: " + clientId);
-        this.model.addClient(clientId);
-        this.newClientHandler.accept(clientId);
+        this.model.addClient(clientId, color);
+        this.newClientHandler.accept(Map.entry(clientId, color));
     }
 
     @Override
@@ -129,6 +147,13 @@ public class PixelArtClient implements ObservableClient, RemoteClient {
         this.log("Received client left: " + clientId);
         this.model.removeClient(clientId);
         this.clientLeftHandler.accept(clientId);
+    }
+
+    @Override
+    public void onUserColorChange(String clientId, int color) throws RemoteException {
+        this.log("Received user color change: " + clientId + ", " + color);
+        this.model.updateUserColor(clientId, color);
+        this.clientColorUpdateHandler.accept(Map.entry(clientId, color));
     }
 
     @Override
@@ -146,7 +171,6 @@ public class PixelArtClient implements ObservableClient, RemoteClient {
     }
 
 
-
     // ObservableClient implementation
 
     @Override
@@ -155,13 +179,18 @@ public class PixelArtClient implements ObservableClient, RemoteClient {
     }
 
     @Override
-    public void setOnUserJoinListener(Consumer<String> onUserJoinListener) {
+    public void setOnUserJoinListener(Consumer<Map.Entry<String, Integer>> onUserJoinListener) {
         this.newClientHandler = onUserJoinListener;
     }
 
     @Override
     public void setOnUserLeaveListener(Consumer<String> onUserLeaveListener) {
         this.clientLeftHandler = onUserLeaveListener;
+    }
+
+    @Override
+    public void setOnUserColorUpdateListener(Consumer<Map.Entry<String, Integer>> onUserColorUpdateListener) {
+        this.clientColorUpdateHandler = onUserColorUpdateListener;
     }
 
     @Override
