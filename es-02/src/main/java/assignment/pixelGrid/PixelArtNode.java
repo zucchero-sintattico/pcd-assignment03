@@ -3,6 +3,8 @@ package assignment.pixelGrid;
 import assignment.pixelGrid.view.PixelGrid;
 import assignment.pixelGrid.view.PixelGridView;
 
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.util.Random;
 import java.util.UUID;
@@ -78,10 +80,17 @@ public class PixelArtNode {
         });
 
         // add listener for closing the window
-        gridView.addWindowClosedListener(() -> {
-            System.out.println("Window closed");
-            this.connection.sendUserDisconnectionToBroker(this.uuid);
-            System.exit(0);
+        gridView.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                try {
+                    connection.closeConnection();
+                } catch (IOException | TimeoutException ex) {
+                    throw new RuntimeException(ex);
+                }
+                super.windowClosing(e);
+            }
+
         });
         gridView.addColorChangedListener(localBrush::setColor);
     }

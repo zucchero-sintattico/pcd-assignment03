@@ -144,6 +144,7 @@ public class PixelArtConnection {
     }
 
     public void closeConnection() throws IOException, TimeoutException {
+        this.sendUserDisconnectionToBroker(UUID.fromString(this.userId));
         this.channel.close();
         this.connection.close();
     }

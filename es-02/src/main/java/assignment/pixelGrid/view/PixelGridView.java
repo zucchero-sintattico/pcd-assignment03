@@ -10,6 +10,7 @@ import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
@@ -114,15 +115,5 @@ public class PixelGridView extends JFrame {
 				movedListener.forEach(l -> l.mouseMoved(e.getX(), e.getY()));
 			}
 		};
-	}
-
-	public void addWindowClosedListener(Runnable callback) {
-		this.addWindowListener(new java.awt.event.WindowAdapter() {
-			@Override
-			public void windowClosing(java.awt.event.WindowEvent windowEvent) {
-				System.out.println("Window closed");
-				System.exit(0);
-			}
-		});
 	}
 }
