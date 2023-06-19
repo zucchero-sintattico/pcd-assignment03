@@ -17,7 +17,6 @@ public class PixelArtNode implements Model {
     private PixelGrid grid;
     private String sessionId;
     Boolean newSession;
-
     private final PixelArtConnection connection = new PixelArtConnection(this);
     private final UUID uuid = UUID.randomUUID();
     private PixelGridView gridView;
@@ -86,11 +85,7 @@ public class PixelArtNode implements Model {
         gridView.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                try {
-                    connection.closeConnection();
-                } catch (IOException | TimeoutException ex) {
-                    throw new RuntimeException(ex);
-                }
+                connection.closeConnection();
                 super.windowClosing(e);
             }
 
