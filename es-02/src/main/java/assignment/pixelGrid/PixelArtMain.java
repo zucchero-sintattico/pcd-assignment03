@@ -1,5 +1,7 @@
 package assignment.pixelGrid;
 
+import assignment.pixelGrid.view.StartMenuView;
+
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 

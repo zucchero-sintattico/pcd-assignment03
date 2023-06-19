@@ -1,4 +1,6 @@
-package assignment.pixelGrid;
+package assignment.pixelGrid.view;
+
+import assignment.pixelGrid.PixelArtNode;
 
 import javax.swing.*;
 import java.io.IOException;

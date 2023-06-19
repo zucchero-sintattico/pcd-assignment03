@@ -11,8 +11,7 @@ public class BrushManager {
     private List<Brush> brushes = new java.util.ArrayList<>();
     private Map<UUID, Brush> brushMap = new HashMap<>();
 
-
-    void draw(final Graphics2D g) {
+    public void draw(final Graphics2D g) {
         brushMap.values().forEach(brush -> {
             g.setColor(new Color(brush.color));
             var circle = new java.awt.geom.Ellipse2D.Double(brush.x - BRUSH_SIZE / 2.0, brush.y - BRUSH_SIZE / 2.0, BRUSH_SIZE, BRUSH_SIZE);
@@ -24,12 +23,12 @@ public class BrushManager {
         });
     }
 
-    void addBrush(final UUID id, final Brush brush) {
+    public void addBrush(final UUID id, final Brush brush) {
         this.brushMap.put(id, brush);
         //this.brushes.add(brush);
     }
 
-    Map<UUID, Brush> getBrushMap() {
+    public Map<UUID, Brush> getBrushMap() {
         return brushMap;
     }
 

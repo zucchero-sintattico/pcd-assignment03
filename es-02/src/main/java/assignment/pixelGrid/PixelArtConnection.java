@@ -1,6 +1,12 @@
 package assignment.pixelGrid;
 
 import com.rabbitmq.client.*;
+import assignment.pixelGrid.view.PixelGrid;
+import assignment.pixelGrid.view.PixelGridView;
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.DeliverCallback;
 
 import java.io.IOException;
 import java.util.ArrayList;
