@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
-public class PixelArtConnection implements Controller{
+public class PixelArtController implements Controller{
     private static final String NEW_BRUSH_POSITION_EXCHANGE_POSTFIX = "NewBrushPosition";
     private static final String NEW_PIXEL_POSITION_EXCHANGE_POSTFIX = "NewPixelUpdate";
     private static final String USER_DISCONNECTION_EXCHANGE_POSTFIX = "UserDisconnection";
@@ -30,7 +30,7 @@ public class PixelArtConnection implements Controller{
     private Boolean isSync = false;
     private final List<PixelInfo> pixelInfoBuffer = new ArrayList<>();
 
-    public PixelArtConnection(PixelArtModel node) {
+    public PixelArtController(PixelArtModel node) {
         this.model = node;
     }
 

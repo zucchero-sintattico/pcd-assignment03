@@ -17,7 +17,7 @@ public class PixelArtModel implements Model {
     private PixelGrid grid;
     private String sessionId;
     Boolean newSession;
-    private final PixelArtConnection connection = new PixelArtConnection(this);
+    private final PixelArtController connection = new PixelArtController(this);
     private final UUID uuid = UUID.randomUUID();
     private PixelGridView gridView;
 
@@ -30,8 +30,6 @@ public class PixelArtModel implements Model {
         this.setNodeSession(sessionId, newSession);
         this.start();
     }
-
-
     public PixelGrid getGrid(){
         return this.grid;
     }
@@ -87,6 +85,7 @@ public class PixelArtModel implements Model {
             public void windowClosing(WindowEvent e) {
                 connection.closeConnection();
                 super.windowClosing(e);
+                gridView.refresh();
             }
 
         });
