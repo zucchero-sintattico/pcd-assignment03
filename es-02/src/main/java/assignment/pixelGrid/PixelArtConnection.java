@@ -1,7 +1,6 @@
 package assignment.pixelGrid;
 
 import assignment.pixelGrid.view.PixelGrid;
-import assignment.pixelGrid.view.PixelGridView;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
@@ -13,7 +12,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
-public class PixelArtConnection {
+public class PixelArtConnection implements Controller{
     private static final String NEW_BRUSH_POSITION_EXCHANGE_POSTFIX = "NewBrushPosition";
     private static final String NEW_PIXEL_POSITION_EXCHANGE_POSTFIX = "NewPixelUpdate";
     private static final String USER_DISCONNECTION_EXCHANGE_POSTFIX = "UserDisconnection";
@@ -143,10 +142,14 @@ public class PixelArtConnection {
         }
     }
 
-    public void closeConnection() throws IOException, TimeoutException {
+    public void closeConnection() {
         this.sendUserDisconnectionToBroker(UUID.fromString(this.userId));
-        this.channel.close();
-        this.connection.close();
+        try {
+            this.channel.close();
+            this.connection.close();
+        } catch (IOException | TimeoutException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /*
@@ -244,7 +247,7 @@ public class PixelArtConnection {
         }
     }
 
-    public void sendNewBrushPositionToBroker(UUID id, int x, int y, int color) {
+    public void sendBrushPositionToBroker(UUID id, int x, int y, int color) {
         delayTicks++;
         delayTicks %= 25;
         try {

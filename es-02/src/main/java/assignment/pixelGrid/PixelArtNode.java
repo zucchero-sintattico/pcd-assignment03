@@ -11,7 +11,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
 
-public class PixelArtNode {
+public class PixelArtNode implements Model {
     private BrushManager brushManager;
     private BrushManager.Brush localBrush;
     private PixelGrid grid;
@@ -29,7 +29,7 @@ public class PixelArtNode {
     }
     public PixelArtNode(String sessionId,Boolean newSession) throws IOException, TimeoutException {
         this.setNodeSession(sessionId, newSession);
-        this.start(sessionId);
+        this.start();
     }
 
 
@@ -49,16 +49,20 @@ public class PixelArtNode {
         return rand.nextInt(256 * 256 * 256);
     }
 
-    public void start(final String sessionId) throws IOException, TimeoutException {
+    public void start() {
         this.brushManager = new BrushManager();
         this.localBrush = new BrushManager.Brush(0, 0, randomColor());
         this.brushManager.addBrush(this.uuid, localBrush);
-        this.setUpSession(sessionId);
+        this.setUpSession(this.sessionId);
         this.setUpGridViewListeners();
     }
 
-    private void setUpSession(String sessionId) throws IOException, TimeoutException {
-        this.gridView = setUpGrid();
+    private void setUpSession(String sessionId){
+        try {
+            this.gridView = setUpGrid();
+        } catch (IOException | TimeoutException e) {
+            throw new RuntimeException(e);
+        }
         this.connection.setUpConnection(sessionId, this.uuid.toString());
         gridView.display();
     }
@@ -66,7 +70,7 @@ public class PixelArtNode {
     private void setUpGridViewListeners() {
         gridView.addMouseMovedListener((x, y) -> {
             localBrush.updatePosition(x, y);
-            this.connection.sendNewBrushPositionToBroker(this.uuid, x, y, localBrush.getColor());
+            this.connection.sendBrushPositionToBroker(this.uuid, x, y, localBrush.getColor());
            // System.out.println(localBrush.getX() + " " + localBrush.getY());
             gridView.refresh();
         });
@@ -76,7 +80,6 @@ public class PixelArtNode {
             System.out.println("---> sending color to broker");
             this.connection.sendPixelUpdateToBroker(this.uuid, x, y, localBrush.getColor());
             gridView.refresh();
-            System.out.println("---> done");
         });
 
         // add listener for closing the window
