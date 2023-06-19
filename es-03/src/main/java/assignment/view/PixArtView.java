@@ -12,7 +12,6 @@ import java.util.UUID;
 public class PixArtView implements View {
 
     private Controller controller;
-
     private StartMenuView startMenuView;
     private PixelGridView pixelGridView;
 
@@ -40,16 +39,7 @@ public class PixArtView implements View {
 
     @Override
     public void onModelReady(Model model) {
-        System.out.println("AAAAAAAAAAAAA");
-        controller.getPlayersColor().forEach((clientId, color) -> {
-            System.out.println("AAAAAAAAAAAAA");
-            MousePosition mousePosition = controller.getPlayersMouse().get(clientId);
-            System.out.println(UUID.fromString(clientId));
-            this.brushManager.addBrush(
-                    UUID.fromString(clientId),
-                    new BrushManager.Brush(mousePosition.x, mousePosition.y, color)
-            );
-        });
+        controller.getPlayersColor().forEach(this::onNewPlayer);
         this.pixelGridView.refresh();
     }
 
@@ -82,13 +72,13 @@ public class PixArtView implements View {
 
 
     @Override
-    public void show() {
-        this.startMenuView.setVisible(true);
-    }
-
-    @Override
     public void onPlayerColorUpdate(String clientId, int color) {
         this.brushManager.getBrushMap().get(UUID.fromString(clientId)).setColor(color);
         this.pixelGridView.refresh();
+    }
+
+    @Override
+    public void show() {
+        this.startMenuView.setVisible(true);
     }
 }

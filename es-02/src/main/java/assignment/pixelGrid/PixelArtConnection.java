@@ -1,7 +1,6 @@
 package assignment.pixelGrid;
 
 import assignment.pixelGrid.view.PixelGrid;
-import assignment.pixelGrid.view.PixelGridView;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
@@ -13,14 +12,12 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
-public class PixelArtConnection {
+public class PixelArtConnection implements Controller{
     private static final String NEW_BRUSH_POSITION_EXCHANGE_POSTFIX = "NewBrushPosition";
     private static final String NEW_PIXEL_POSITION_EXCHANGE_POSTFIX = "NewPixelUpdate";
     private static final String USER_DISCONNECTION_EXCHANGE_POSTFIX = "UserDisconnection";
 
     private String newBrushPositionExch;
-    private String newPixelUpdateExch;
-    private String userDisconnectionExch;
     private String sessionId;
     private String userId;
     private String newBrushPositionQueueName;
@@ -29,12 +26,12 @@ public class PixelArtConnection {
     private Channel channel;
     private Connection connection;
     private int delayTicks = 0;
-    private final PixelArtNode node;
+    private final PixelArtModel model;
     private Boolean isSync = false;
     private final List<PixelInfo> pixelInfoBuffer = new ArrayList<>();
 
-    public PixelArtConnection(PixelArtNode node) {
-        this.node = node;
+    public PixelArtConnection(PixelArtModel node) {
+        this.model = node;
     }
 
     public void setUpConnection(String sessionId, String userId){
@@ -52,15 +49,19 @@ public class PixelArtConnection {
             this.defineCallbacks();
 
             // If it's a join, send a message to the server
-            if(!this.node.newSession){
-                System.out.println("[JOIN] - waiting for session grid");
-                this.waitSessionGrid();
-            }
+            this.obtainGridState();
             this.defineSendGridCallback();
         } catch (IOException | TimeoutException e) {
             throw new RuntimeException(e);
         }
 
+    }
+
+    private void obtainGridState() {
+        if(!this.model.newSession){
+            System.out.println("[JOIN] - waiting for session grid");
+            this.waitSessionGrid();
+        }
     }
 
     private void defineSendGridCallback() throws IOException {
@@ -70,44 +71,35 @@ public class PixelArtConnection {
             System.out.println("[ inSYNC NODE ] - Sending grid");
             String userId = new String(d.getBody(), "UTF-8");
             this.channel.queueDeclare(userId, false, false, false, null);
-            this.channel.basicPublish("", userId, null, this.node.getGrid().toString().getBytes("UTF-8"));
+            this.channel.basicPublish("", userId, null, this.model.getGrid().toString().getBytes("UTF-8"));
         }, consumerTag1 -> {});
 
 
     }
 
     private void waitSessionGrid() {
-        DeliverCallback deliverCallback = (consumerTag, delivery) -> {
+        DeliverCallback onGrid = (consumerTag, delivery) -> {
             String gridState = new String(delivery.getBody(), "UTF-8");
             try {
                 // Get the grid from the server
                 System.out.println("Got session grid");
                 System.out.println(gridState);
-                this.node.setGrid(PixelGrid.createFromString(gridState));
-
+                this.model.setGrid(PixelGrid.createFromString(gridState));
                 // Apply the incoming events
-                this.pixelInfoBuffer.forEach(pixelInfo -> this.node.getGrid().set(pixelInfo.getX(), pixelInfo.getY(), pixelInfo.getColor()));
+                this.pixelInfoBuffer.forEach(pixelInfo -> this.model.getGrid().set(pixelInfo.getX(), pixelInfo.getY(), pixelInfo.getColor()));
                 this.isSync = true;
-
                 // Refresh the view with the new grid
-                this.node.getView().setGrid(this.node.getGrid());
-
-
+                this.model.getView().setGrid(this.model.getGrid());
             } catch (TimeoutException e) {
                 throw new RuntimeException(e);
             }
         };
         try {
-            this.channel.basicPublish("", this.sessionId, null, this.userId.getBytes("UTF-8"));
-
-            System.out.println("\t-->Defining queues & callbacks for session grid");
             // a new queue is created for the actual user
-            this.channel.queueDeclare(this.userId, false, false, false, null);
-            // the user is subscribed to the queue, so he can receive the grid
-            this.channel.basicConsume(this.userId, true, deliverCallback, consumerTag -> {});
+            this.channel.basicPublish("", this.sessionId, null, this.userId.getBytes("UTF-8"));
+            System.out.println("\t-->Defining queues & callbacks for session grid");
             // the user sends a message to the server, so he can receive the grid
-
-            //this.channel.basicPublish("", this.sessionId, null, this.userId.getBytes("UTF-8"));
+            this.getGridState(onGrid);
             System.out.println("\t-->Done");
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -115,16 +107,21 @@ public class PixelArtConnection {
 
     }
 
+    private void getGridState(DeliverCallback onGrid) throws IOException {
+        this.channel.queueDeclare(this.userId, false, false, false, null);
+        // the user is subscribed to the queue, so he can receive the grid
+        this.channel.basicConsume(this.userId, true, onGrid, consumerTag -> {});
+    }
+
     private void declareQueues() throws IOException {
         this.newBrushPositionExch = this.sessionId +"_"+ NEW_BRUSH_POSITION_EXCHANGE_POSTFIX;
-        this.newPixelUpdateExch = this.sessionId +"_"+ NEW_PIXEL_POSITION_EXCHANGE_POSTFIX;
-        this.userDisconnectionExch = this.sessionId +"_"+ USER_DISCONNECTION_EXCHANGE_POSTFIX;
-
-        System.out.println("--> Declaring exchanges:\n\t" + this.newBrushPositionExch + "\n\t" + this.newPixelUpdateExch + "\n\t" + this.userDisconnectionExch);
+        String newPixelUpdateExch = this.sessionId + "_" + NEW_PIXEL_POSITION_EXCHANGE_POSTFIX;
+        String userDisconnectionExch = this.sessionId + "_" + USER_DISCONNECTION_EXCHANGE_POSTFIX;
+        System.out.println("--> Declaring exchanges:\n\t" + this.newBrushPositionExch + "\n\t" + newPixelUpdateExch + "\n\t" + userDisconnectionExch);
         try {
-            channel.exchangeDeclare(this.newPixelUpdateExch, "fanout");
+            channel.exchangeDeclare(newPixelUpdateExch, "fanout");
             this.newPixelUpdateQueueName = channel.queueDeclare().getQueue();
-            channel.queueBind(this.newPixelUpdateQueueName, this.newPixelUpdateExch, "");
+            channel.queueBind(this.newPixelUpdateQueueName, newPixelUpdateExch, "");
 
             channel.exchangeDeclare(this.newBrushPositionExch, "fanout");
             this.newBrushPositionQueueName = channel.queueDeclare().getQueue();
@@ -143,10 +140,14 @@ public class PixelArtConnection {
         }
     }
 
-    public void closeConnection() throws IOException, TimeoutException {
+    public void closeConnection() {
         this.sendUserDisconnectionToBroker(UUID.fromString(this.userId));
-        this.channel.close();
-        this.connection.close();
+        try {
+            this.channel.close();
+            this.connection.close();
+        } catch (IOException | TimeoutException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /*
@@ -159,7 +160,6 @@ public class PixelArtConnection {
         this.defineUserDisconnectedCallback();
     }
 
-
     private void definePixelUpdateCallback() {
         DeliverCallback newColorCallback = (consumerTag, delivery) -> {
             String message = new String(delivery.getBody(), "UTF-8");
@@ -168,9 +168,9 @@ public class PixelArtConnection {
             int x = Integer.parseInt(parts[1]);
             int y = Integer.parseInt(parts[2]);
             int color = Integer.parseInt(parts[3]);
-            this.node.getGrid().set(x, y, color);
-            System.out.println("New-Color: "+ this.node.getGrid().get(x, y));
-            this.node.getView().refresh();
+            this.model.onPixelUpdate(x, y, color);
+            System.out.println("New-Color: "+ this.model.getGrid().get(x, y));
+            this.model.getView().refresh();
         };
         try {
             this.channel.basicConsume(this.newPixelUpdateQueueName, true, newColorCallback, consumerTag -> {});
@@ -181,9 +181,8 @@ public class PixelArtConnection {
 
     private void defineNewBrushPositionCallback() throws IOException {
         DeliverCallback newBrushPositionCallback = (consumerTag, delivery) -> {
-
             // while not inSync, add messages to buffer
-            if (!isSync && !this.node.newSession) {
+            if (!isSync && !this.model.newSession) {
                 String message = new String(delivery.getBody(), "UTF-8");
                 String[] parts = message.split(" ");
                 int x = Integer.parseInt(parts[1]);
@@ -202,15 +201,8 @@ public class PixelArtConnection {
             int newX = Integer.parseInt(parts[1]);
             int newY = Integer.parseInt(parts[2]);
             int newColor = Integer.parseInt(parts[3]);
-            var brush = this.node.getBrushManager().getBrushMap().keySet().stream().filter(b -> b.equals(brushId)).findFirst();
-            brush.ifPresentOrElse(b -> {
-                        this.node.getBrushManager().getBrushMap().get(brushId).updatePosition(newX, newY);
-                        this.node.getBrushManager().getBrushMap().get(brushId).setColor(newColor);
-                    },
-                    () -> { var newBrush = new BrushManager.Brush(newX, newY, newColor);
-                        this.node.getBrushManager().getBrushMap().put(brushId, newBrush);
-                    });
-            this.node.getView().refresh();
+            this.model.onBrushPosition(brushId, newX, newY, newColor);
+            this.model.getView().refresh();
         };
 
         this.channel.basicConsume(this.newBrushPositionQueueName, true, newBrushPositionCallback, consumerTag -> {});
@@ -222,8 +214,8 @@ public class PixelArtConnection {
             System.out.println(" -Disconnected '" + message);
             String[] parts = message.split(" ");
             // Message: brushId
-            UUID brushId = UUID.fromString(parts[0]);
-            this.node.getBrushManager().getBrushMap().remove(brushId);
+            UUID uuid = UUID.fromString(parts[0]);
+            this.model.onDisconnect(uuid);
         };
         this.channel.basicConsume(this.userDisconnectionQueueName, true, disconnectCallback, consumerTag -> {});
     }
@@ -244,9 +236,9 @@ public class PixelArtConnection {
         }
     }
 
-    public void sendNewBrushPositionToBroker(UUID id, int x, int y, int color) {
+    public void sendBrushPositionToBroker(UUID id, int x, int y, int color) {
         delayTicks++;
-        delayTicks %= 25;
+        delayTicks %= 1;
         try {
             if (delayTicks == 0) {
                 String message = id + " " + x + " " + y + " " + color;
