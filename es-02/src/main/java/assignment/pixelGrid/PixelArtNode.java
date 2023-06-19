@@ -107,9 +107,12 @@ public class PixelArtNode {
     private PixelGridView setUpGrid() throws IOException, TimeoutException {
         this.grid = new PixelGrid(40,40);
         Random rand = new Random();
-        for (int i = 0; i < 10; i++) {
-            grid.set(rand.nextInt(40), rand.nextInt(40), randomColor());
+        if(this.newSession){
+            for (int i = 0; i < 10; i++) {
+                grid.set(rand.nextInt(40), rand.nextInt(40), randomColor());
+            }
         }
+
         return new PixelGridView(grid, brushManager, 800, 800);
     }
 }

@@ -54,9 +54,11 @@ public class PixelArtConnection {
 
             // If it's a join, send a message to the server
             if(!this.node.newSession){
-                System.out.println("waiting for session grid");
+                System.out.println("[JOIN] - waiting for session grid");
                 this.waitSessionGrid();
             }
+            this.defineSendGridCallback();
+
             //this.waitSessionGrid();
         } catch (IOException | TimeoutException e) {
             throw new RuntimeException(e);
@@ -64,29 +66,55 @@ public class PixelArtConnection {
 
     }
 
+    private void defineSendGridCallback() throws IOException {
+        System.out.println("Enabling sending grid");
+        // Start to listen to new requests
+        this.channel.basicConsume(this.sessionId, true, (c, d) ->{
+            System.out.println("[ inSYNC NODE ] - Sending grid");
+            String userId = new String(d.getBody(), "UTF-8");
+            this.channel.queueDeclare(userId, false, false, false, null);
+            this.channel.basicPublish("", userId, null, this.node.getGrid().toString().getBytes("UTF-8"));
+        }, consumerTag1 -> {});
+
+
+    }
+
+
+
     private void waitSessionGrid() {
         DeliverCallback deliverCallback = (consumerTag, delivery) -> {
             String gridState = new String(delivery.getBody(), "UTF-8");
             try {
                 // Get the grid from the server
+                System.out.println("Got session grid");
+                //System.out.println(gridState);
                 this.node.setGrid(PixelGrid.createFromString(gridState));
+
+
                 this.pixelInfoBuffer.forEach(pixelInfo -> this.node.getGrid().set(pixelInfo.getX(), pixelInfo.getY(), pixelInfo.getColor()));
                 this.isSync = true;
-                // Start to listen to new requests
-                this.channel.queueDeclare(this.sessionId, false, false, false, null);
-                this.channel.basicConsume(this.sessionId, true, (c, d) ->{
-                    String userId = new String(d.getBody(), "UTF-8");
-                    this.channel.queueDeclare(userId, false, false, false, null);
-                    this.channel.basicPublish("", userId, null, this.node.getGrid().toString().getBytes("UTF-8"));
-                }, consumerTag1 -> {});
+                //System.out.println(this.node.getGrid().toString());
+
+
+                //this.node.getView().refresh();
+
+
             } catch (TimeoutException e) {
                 throw new RuntimeException(e);
             }
         };
         try {
-            this.channel.queueDeclare(this.userId, false, false, false, null);
-            this.channel.basicConsume(this.userId, true, deliverCallback, consumerTag -> {});
             this.channel.basicPublish("", this.sessionId, null, this.userId.getBytes("UTF-8"));
+
+            System.out.println("\t-->Defining queues & callbacks for session grid");
+            // a new queue is created for the actual user
+            this.channel.queueDeclare(this.userId, false, false, false, null);
+            // the user is subscribed to the queue, so he can receive the grid
+            this.channel.basicConsume(this.userId, true, deliverCallback, consumerTag -> {});
+            // the user sends a message to the server, so he can receive the grid
+
+            //this.channel.basicPublish("", this.sessionId, null, this.userId.getBytes("UTF-8"));
+            System.out.println("\t-->Done");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -111,6 +139,9 @@ public class PixelArtConnection {
             channel.exchangeDeclare(userDisconnectionExch, "fanout");
             this.userDisconnectionQueueName = channel.queueDeclare().getQueue();
             channel.queueBind(this.userDisconnectionQueueName, userDisconnectionExch, "");
+
+            System.out.println("\tDeclaring SessionID queue");
+            this.channel.queueDeclare(this.sessionId, false, false, false, null);
 
             System.out.println("--> Done");
         } catch (IOException e) {
