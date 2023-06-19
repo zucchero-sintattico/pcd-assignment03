@@ -1,4 +1,6 @@
-package assignment.pixelGrid;
+package assignment.pixelGrid.view;
+
+import assignment.pixelGrid.BrushManager;
 
 import javax.swing.*;
 import java.awt.*;

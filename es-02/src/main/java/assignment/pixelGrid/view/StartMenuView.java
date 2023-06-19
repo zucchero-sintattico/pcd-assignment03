@@ -1,4 +1,4 @@
-package assignment.pixelGrid;
+package assignment.pixelGrid.view;
 
 import javax.swing.*;
 
