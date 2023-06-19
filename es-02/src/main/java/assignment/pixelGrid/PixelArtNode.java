@@ -98,6 +98,28 @@ public class PixelArtNode implements Model {
         this.grid = grid;
     }
 
+    @Override
+    public void onBrushPosition(UUID uuid, int x, int y, int color) {
+        var brush = this.getBrushManager().getBrushMap().keySet().stream().filter(b -> b.equals(uuid)).findFirst();
+        brush.ifPresentOrElse(b -> {
+                    this.getBrushManager().getBrushMap().get(uuid).updatePosition(x, y);
+                    this.getBrushManager().getBrushMap().get(uuid).setColor(color);
+                },
+                () -> { var newBrush = new BrushManager.Brush(x, y, color);
+                    this.getBrushManager().getBrushMap().put(uuid, newBrush);
+                });
+    }
+
+    @Override
+    public void onPixelUpdate(int x, int y, int color) {
+        this.getGrid().set(x, y, color);
+    }
+
+    @Override
+    public void onDisconnect(UUID uuid) {
+        this.getBrushManager().getBrushMap().remove(uuid);
+    }
+
     private PixelGridView setUpGrid() throws IOException, TimeoutException {
         this.grid = new PixelGrid(40,40);
         Random rand = new Random();

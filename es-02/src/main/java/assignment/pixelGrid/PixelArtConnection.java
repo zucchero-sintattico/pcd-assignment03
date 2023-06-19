@@ -168,7 +168,7 @@ public class PixelArtConnection implements Controller{
             int x = Integer.parseInt(parts[1]);
             int y = Integer.parseInt(parts[2]);
             int color = Integer.parseInt(parts[3]);
-            this.model.getGrid().set(x, y, color);
+            this.model.onPixelUpdate(x, y, color);
             System.out.println("New-Color: "+ this.model.getGrid().get(x, y));
             this.model.getView().refresh();
         };
@@ -181,7 +181,6 @@ public class PixelArtConnection implements Controller{
 
     private void defineNewBrushPositionCallback() throws IOException {
         DeliverCallback newBrushPositionCallback = (consumerTag, delivery) -> {
-
             // while not inSync, add messages to buffer
             if (!isSync && !this.model.newSession) {
                 String message = new String(delivery.getBody(), "UTF-8");
@@ -202,14 +201,7 @@ public class PixelArtConnection implements Controller{
             int newX = Integer.parseInt(parts[1]);
             int newY = Integer.parseInt(parts[2]);
             int newColor = Integer.parseInt(parts[3]);
-            var brush = this.model.getBrushManager().getBrushMap().keySet().stream().filter(b -> b.equals(brushId)).findFirst();
-            brush.ifPresentOrElse(b -> {
-                        this.model.getBrushManager().getBrushMap().get(brushId).updatePosition(newX, newY);
-                        this.model.getBrushManager().getBrushMap().get(brushId).setColor(newColor);
-                    },
-                    () -> { var newBrush = new BrushManager.Brush(newX, newY, newColor);
-                        this.model.getBrushManager().getBrushMap().put(brushId, newBrush);
-                    });
+            this.model.onBrushPosition(brushId, newX, newY, newColor);
             this.model.getView().refresh();
         };
 
@@ -222,8 +214,8 @@ public class PixelArtConnection implements Controller{
             System.out.println(" -Disconnected '" + message);
             String[] parts = message.split(" ");
             // Message: brushId
-            UUID brushId = UUID.fromString(parts[0]);
-            this.model.getBrushManager().getBrushMap().remove(brushId);
+            UUID uuid = UUID.fromString(parts[0]);
+            this.model.onDisconnect(uuid);
         };
         this.channel.basicConsume(this.userDisconnectionQueueName, true, disconnectCallback, consumerTag -> {});
     }
