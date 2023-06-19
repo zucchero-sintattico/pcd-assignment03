@@ -7,7 +7,7 @@ public interface Session extends Remote {
 
     String getId() throws RemoteException;
 
-    void registerClient(String clientId) throws RemoteException;
+    void registerClient(String clientId, int color) throws RemoteException;
 
     void unregisterClient(String clientId) throws RemoteException;
 
@@ -15,4 +15,5 @@ public interface Session extends Remote {
 
     void updatePixel(int x, int y, int color) throws RemoteException;
 
+    void updateUserColor(String clientId, int color) throws RemoteException;
 }

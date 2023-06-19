@@ -38,14 +38,14 @@ public class PixelArtSession implements Session {
     }
 
     @Override
-    public synchronized void registerClient(String clientId) throws RemoteException {
+    public synchronized void registerClient(String clientId, int color) throws RemoteException {
         this.log("Registering new client: " + clientId);
-        this.model.addClient(clientId);
+        this.model.addClient(clientId, color);
         try {
             RemoteClient remoteClient = (RemoteClient) registry.lookup(clientId);
             clients.values().forEach(x -> {
                 try {
-                    x.onNewClient(clientId);
+                    x.onNewClient(clientId, color);
                 } catch (RemoteException e) {
                     throw new RuntimeException(e);
                 }
@@ -92,6 +92,19 @@ public class PixelArtSession implements Session {
         clients.values().forEach(client -> {
             try {
                 client.onPixelUpdated(x, y, color);
+            } catch (RemoteException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    @Override
+    public void updateUserColor(String clientId, int color) {
+        this.log("Updating user color for client: " + clientId);
+        this.model.updateUserColor(clientId, color);
+        clients.values().forEach(client -> {
+            try {
+                client.onUserColorChange(clientId, color);
             } catch (RemoteException e) {
                 throw new RuntimeException(e);
             }

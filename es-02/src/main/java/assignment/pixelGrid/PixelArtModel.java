@@ -68,7 +68,6 @@ public class PixelArtModel implements Model {
         gridView.addMouseMovedListener((x, y) -> {
             localBrush.updatePosition(x, y);
             this.connection.sendBrushPositionToBroker(this.uuid, x, y, localBrush.getColor());
-           // System.out.println(localBrush.getX() + " " + localBrush.getY());
             gridView.refresh();
         });
 

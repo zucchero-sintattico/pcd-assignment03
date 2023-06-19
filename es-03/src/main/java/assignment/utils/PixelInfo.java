@@ -1,6 +1,8 @@
 package assignment.utils;
 
-public class PixelInfo {
+import java.io.Serializable;
+
+public class PixelInfo implements Serializable {
     public final int x;
     public final int y;
     public final int color;

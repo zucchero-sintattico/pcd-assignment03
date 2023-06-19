@@ -8,11 +8,13 @@ public interface Client {
 
     Model getModel();
 
-    void join(String sessionId);
+    void join(String sessionId, int color);
 
     String create();
 
     void leave();
+
+    void updateUserColor(int color);
 
     void updateMousePosition(int x, int y);
 

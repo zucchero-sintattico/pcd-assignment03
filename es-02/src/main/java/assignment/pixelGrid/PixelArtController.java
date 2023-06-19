@@ -238,7 +238,7 @@ public class PixelArtController implements Controller{
 
     public void sendBrushPositionToBroker(UUID id, int x, int y, int color) {
         delayTicks++;
-        delayTicks %= 25;
+        delayTicks %= 1;
         try {
             if (delayTicks == 0) {
                 String message = id + " " + x + " " + y + " " + color;
