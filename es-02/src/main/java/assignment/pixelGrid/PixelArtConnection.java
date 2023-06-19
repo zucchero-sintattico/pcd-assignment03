@@ -246,7 +246,7 @@ public class PixelArtConnection {
 
     public void sendNewBrushPositionToBroker(UUID id, int x, int y, int color) {
         delayTicks++;
-        delayTicks %= 50;
+        delayTicks %= 25;
         try {
             if (delayTicks == 0) {
                 String message = id + " " + x + " " + y + " " + color;
