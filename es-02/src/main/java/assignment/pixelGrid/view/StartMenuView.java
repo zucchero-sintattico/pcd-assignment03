@@ -1,6 +1,6 @@
 package assignment.pixelGrid.view;
 
-import assignment.pixelGrid.PixelArtNode;
+import assignment.pixelGrid.PixelArtModel;
 
 import javax.swing.*;
 import java.io.IOException;
@@ -26,7 +26,7 @@ public class StartMenuView extends JFrame {
                 if (sessionIdField.getText().equals("Session ID")) {
                     JOptionPane.showMessageDialog(this, "Please insert a session ID");
                 } else {
-                    new PixelArtNode(sessionIdField.getText(), true);
+                    new PixelArtModel(sessionIdField.getText(), true);
                     this.setVisible(false);
                 }
             } catch (IOException | TimeoutException ioException) {
@@ -40,7 +40,7 @@ public class StartMenuView extends JFrame {
                 JOptionPane.showMessageDialog(this, "Please insert a session ID");
             } else {
                 try {
-                    new PixelArtNode(sessionIdField.getText(), false);
+                    new PixelArtModel(sessionIdField.getText(), false);
                     this.setVisible(false);
                 } catch (IOException | TimeoutException ex) {
                     throw new RuntimeException(ex);

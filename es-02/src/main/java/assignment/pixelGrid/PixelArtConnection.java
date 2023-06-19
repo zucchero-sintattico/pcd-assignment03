@@ -26,11 +26,11 @@ public class PixelArtConnection implements Controller{
     private Channel channel;
     private Connection connection;
     private int delayTicks = 0;
-    private final PixelArtNode model;
+    private final PixelArtModel model;
     private Boolean isSync = false;
     private final List<PixelInfo> pixelInfoBuffer = new ArrayList<>();
 
-    public PixelArtConnection(PixelArtNode node) {
+    public PixelArtConnection(PixelArtModel node) {
         this.model = node;
     }
 

@@ -11,7 +11,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
 
-public class PixelArtNode implements Model {
+public class PixelArtModel implements Model {
     private BrushManager brushManager;
     private BrushManager.Brush localBrush;
     private PixelGrid grid;
@@ -26,7 +26,7 @@ public class PixelArtNode implements Model {
         this.sessionId = sessionId;
         this.newSession = newSession;
     }
-    public PixelArtNode(String sessionId,Boolean newSession) throws IOException, TimeoutException {
+    public PixelArtModel(String sessionId, Boolean newSession) throws IOException, TimeoutException {
         this.setNodeSession(sessionId, newSession);
         this.start();
     }
