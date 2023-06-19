@@ -21,13 +21,9 @@ public class PixelArtModel implements Model {
     private final UUID uuid = UUID.randomUUID();
     private PixelGridView gridView;
 
-
-    public void setNodeSession(String sessionId, Boolean newSession){
+    public PixelArtModel(String sessionId, Boolean newSession) throws IOException, TimeoutException {
         this.sessionId = sessionId;
         this.newSession = newSession;
-    }
-    public PixelArtModel(String sessionId, Boolean newSession) throws IOException, TimeoutException {
-        this.setNodeSession(sessionId, newSession);
         this.start();
     }
     public PixelGrid getGrid(){

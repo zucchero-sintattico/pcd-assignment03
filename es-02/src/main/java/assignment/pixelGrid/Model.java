@@ -7,7 +7,6 @@ import assignment.pixelGrid.view.PixelGridView;
 import java.util.UUID;
 
 public interface Model {
-    void setNodeSession(String sessionId, Boolean newSession);
     void start();
     void setGrid(PixelGrid grid);
     void onBrushPosition(UUID uuid, int x, int y, int color);
