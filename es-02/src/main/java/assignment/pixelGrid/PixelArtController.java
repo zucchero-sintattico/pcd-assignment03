@@ -48,9 +48,14 @@ public class PixelArtController implements Controller{
             System.out.println("defining callbacks");
             this.defineCallbacks();
 
-            // If it's a join, send a message to the server
-            this.obtainGridState();
-            this.defineSendGridCallback();
+
+            if(this.model.newSession){
+                this.defineSendGridCallback();
+            }
+            else{
+                // If it's a join, send a message to the server
+                this.obtainGridState();
+            }
         } catch (IOException | TimeoutException e) {
             throw new RuntimeException(e);
         }
@@ -88,6 +93,7 @@ public class PixelArtController implements Controller{
                 // Apply the incoming events
                 this.pixelInfoBuffer.forEach(pixelInfo -> this.model.getGrid().set(pixelInfo.getX(), pixelInfo.getY(), pixelInfo.getColor()));
                 this.isSync = true;
+                this.defineSendGridCallback();
                 // Refresh the view with the new grid
                 this.model.getView().setGrid(this.model.getGrid());
             } catch (TimeoutException e) {
