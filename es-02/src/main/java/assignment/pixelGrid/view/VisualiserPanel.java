@@ -1,18 +1,19 @@
 package assignment.pixelGrid.view;
 
-import assignment.pixelGrid.BrushManager;
+import assignment.pixelGrid.model.BrushManager;
+import assignment.pixelGrid.model.PixelGrid;
 
 import javax.swing.*;
 import java.awt.*;
 
 public class VisualiserPanel extends JPanel {
     private static final int STROKE_SIZE = 1;
-    private final BrushManager brushManager;
+    private BrushManager brushManager;
     private PixelGrid grid;
-    private final int w,h;
+    private final int w, h;
 
-    public VisualiserPanel(PixelGrid grid, BrushManager brushManager, int w, int h){
-        setSize(w,h);
+    public VisualiserPanel(PixelGrid grid, BrushManager brushManager, int w, int h) {
+        setSize(w, h);
         this.grid = grid;
         this.w = w;
         this.h = h;
@@ -20,7 +21,7 @@ public class VisualiserPanel extends JPanel {
         this.setPreferredSize(new Dimension(w, h));
     }
 
-    public void paint(Graphics g){
+    public void paint(Graphics g) {
         Graphics2D g2 = (Graphics2D) g;
 
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
@@ -56,8 +57,16 @@ public class VisualiserPanel extends JPanel {
 
         brushManager.draw(g2);
     }
-    public void setGrid(PixelGrid grid){
-        this.grid.clear();
-        this.grid = grid;
+
+    public void setGrid(PixelGrid grid) {
+        for (int x = 0; x < grid.getNumColumns(); x++) {
+            for (int y = 0; y < grid.getNumRows(); y++) {
+                this.grid.set(x, y, grid.get(x, y));
+            }
+        }
+    }
+
+    public void setBrushManager(BrushManager brushManager) {
+        this.brushManager = brushManager;
     }
 }

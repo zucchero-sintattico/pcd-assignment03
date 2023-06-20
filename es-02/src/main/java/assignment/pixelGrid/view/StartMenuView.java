@@ -1,10 +1,8 @@
 package assignment.pixelGrid.view;
 
-import assignment.pixelGrid.PixelArtModel;
+import assignment.pixelGrid.controller.ControllerImpl;
 
 import javax.swing.*;
-import java.io.IOException;
-import java.util.concurrent.TimeoutException;
 
 public class StartMenuView extends JFrame {
     private final JButton createSessionButton = new JButton("Create Session");
@@ -22,15 +20,11 @@ public class StartMenuView extends JFrame {
 
         //create new session
         this.createSessionButton.addActionListener(e -> {
-            try {
-                if (sessionIdField.getText().equals("Session ID")) {
-                    JOptionPane.showMessageDialog(this, "Please insert a session ID");
-                } else {
-                    new PixelArtModel(sessionIdField.getText(), true);
-                    this.setVisible(false);
-                }
-            } catch (IOException | TimeoutException ioException) {
-                ioException.printStackTrace();
+            if (sessionIdField.getText().equals("Session ID")) {
+                JOptionPane.showMessageDialog(this, "Please insert a session ID");
+            } else {
+                new ControllerImpl(true, sessionIdField.getText()).start();
+                this.setVisible(false);
             }
         });
 
@@ -39,12 +33,8 @@ public class StartMenuView extends JFrame {
             if (sessionIdField.getText().equals("Session ID")) {
                 JOptionPane.showMessageDialog(this, "Please insert a session ID");
             } else {
-                try {
-                    new PixelArtModel(sessionIdField.getText(), false);
-                    this.setVisible(false);
-                } catch (IOException | TimeoutException ex) {
-                    throw new RuntimeException(ex);
-                }
+                new ControllerImpl(false, sessionIdField.getText()).start();
+                this.setVisible(false);
             }
         });
 

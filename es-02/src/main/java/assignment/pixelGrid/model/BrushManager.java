@@ -1,4 +1,4 @@
-package assignment.pixelGrid;
+package assignment.pixelGrid.model;
 
 
 import java.awt.*;
@@ -9,7 +9,7 @@ public class BrushManager {
     private static final int BRUSH_SIZE = 10;
     private static final int STROKE_SIZE = 2;
     private List<Brush> brushes = new java.util.ArrayList<>();
-    private Map<UUID, Brush> brushMap = new HashMap<>();
+    private Map<String, Brush> brushMap = new HashMap<>();
 
     public void draw(final Graphics2D g) {
         brushMap.values().forEach(brush -> {
@@ -23,12 +23,12 @@ public class BrushManager {
         });
     }
 
-    public void addBrush(final UUID id, final Brush brush) {
+    public void addBrush(final String id, final Brush brush) {
         this.brushMap.put(id, brush);
         //this.brushes.add(brush);
     }
 
-    public Map<UUID, Brush> getBrushMap() {
+    public Map<String, Brush> getBrushMap() {
         return brushMap;
     }
 
@@ -50,17 +50,21 @@ public class BrushManager {
             this.x = x;
             this.y = y;
         }
+
         // write after this getter and setters
-        public int getX(){
+        public int getX() {
             return this.x;
         }
-        public int getY(){
+
+        public int getY() {
             return this.y;
         }
-        public int getColor(){
+
+        public int getColor() {
             return this.color;
         }
-        public void setColor(int color){
+
+        public void setColor(int color) {
             this.color = color;
         }
 
