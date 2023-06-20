@@ -2,9 +2,9 @@ package assignment.pixelGrid.view;
 
 import assignment.pixelGrid.model.BrushManager;
 import assignment.pixelGrid.model.PixelGrid;
-import assignment.pixelGrid.listeners.ColorChangeListener;
-import assignment.pixelGrid.listeners.MouseMovedListener;
-import assignment.pixelGrid.listeners.PixelGridEventListener;
+import assignment.pixelGrid.view.listeners.ColorChangeListener;
+import assignment.pixelGrid.view.listeners.MouseMovedListener;
+import assignment.pixelGrid.view.listeners.PixelGridEventListener;
 
 import javax.swing.*;
 import java.awt.*;
