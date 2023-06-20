@@ -1,35 +1,35 @@
 package assignment.pixelGrid.model;
 
-import assignment.pixelGrid.BrushManager;
-import assignment.pixelGrid.view.PixelGrid;
-
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 public class ModelImpl implements ObservableModel {
     private final BrushManager brushManager = new BrushManager();
-    private final Map<String, BrushManager.Brush> brushes = new HashMap<>();
     private PixelGrid grid;
-    private Consumer<PixelGrid> pixelGridEventListener = (p) -> {};
-    private Consumer<BrushManager> brushManagerEventListener = (b) -> {};
-    private Consumer<String> disconnectEventListener = (u) -> {};
+    private Consumer<PixelGrid> pixelGridEventListener = (p) -> {
+    };
+    private Consumer<BrushManager> brushManagerEventListener = (b) -> {
+    };
+    private Consumer<String> disconnectEventListener = (u) -> {
+    };
     private final String userId = UUID.randomUUID().toString();
 
     public ModelImpl() {
         try {
-            this.grid = new PixelGrid(10, 10);
-            this.brushes.put(this.userId, new BrushManager.Brush(0, 0, 0));
+            this.grid = new PixelGrid(40, 40);
+            this.setUpGrid();
+            this.brushManager.getBrushMap().put(this.userId, new BrushManager.Brush(0, 0, randomColor()));
         } catch (IOException | TimeoutException e) {
             throw new RuntimeException(e);
         }
     }
+
     public ModelImpl(PixelGrid grid) {
         this.grid = grid;
-        this.brushes.put(UUID.randomUUID().toString(), new BrushManager.Brush(0, 0, 0));
+        this.brushManager.getBrushMap().put(this.userId, new BrushManager.Brush(0, 0, randomColor()));
     }
 
     @Override
@@ -37,10 +37,6 @@ public class ModelImpl implements ObservableModel {
         return this.brushManager;
     }
 
-    @Override
-    public Map<String, BrushManager.Brush> getBrushes() {
-        return this.brushes;
-    }
 
     @Override
     public PixelGrid getGrid() {
@@ -49,7 +45,12 @@ public class ModelImpl implements ObservableModel {
 
     @Override
     public void setGrid(PixelGrid grid) {
-        this.grid = grid;
+        for (int x = 0; x < grid.getNumColumns(); x++) {
+            for (int y = 0; y < grid.getNumRows(); y++) {
+                this.grid.set(x, y, grid.get(x, y));
+            }
+        }
+        this.pixelGridEventListener.accept(this.grid);
     }
 
     @Override
@@ -59,19 +60,19 @@ public class ModelImpl implements ObservableModel {
 
     @Override
     public void updateBrush(String userId, int x, int y, int color) {
-        this.brushes.put(userId, new BrushManager.Brush(x, y, color));
+        this.brushManager.getBrushMap().put(userId, new BrushManager.Brush(x, y, color));
         this.brushManagerEventListener.accept(this.brushManager);
     }
 
     @Override
     public void removeBrush(String userId) {
-        this.brushes.remove(userId);
+        this.brushManager.getBrushMap().remove(userId);
         this.brushManagerEventListener.accept(this.brushManager);
     }
 
     @Override
     public void addBrush(String userId, int x, int y, int color) {
-        this.brushes.put(userId, new BrushManager.Brush(x, y, color));
+        this.brushManager.getBrushMap().put(userId, new BrushManager.Brush(x, y, color));
     }
 
     @Override
@@ -93,5 +94,19 @@ public class ModelImpl implements ObservableModel {
     @Override
     public void setDisconnectEventListener(Consumer<String> listener) {
         this.disconnectEventListener = listener;
+    }
+
+    private void setUpGrid() throws IOException, TimeoutException {
+        this.grid = new PixelGrid(40, 40);
+        Random rand = new Random();
+        for (int i = 0; i < 10; i++) {
+            grid.set(rand.nextInt(40), rand.nextInt(40), randomColor());
+        }
+
+    }
+
+    private int randomColor() {
+        Random rand = new Random();
+        return rand.nextInt(256 * 256 * 256);
     }
 }
