@@ -71,11 +71,6 @@ public class ModelImpl implements ObservableModel {
     }
 
     @Override
-    public void addBrush(String userId, int x, int y, int color) {
-        this.brushManager.getBrushMap().put(userId, new BrushManager.Brush(x, y, color));
-    }
-
-    @Override
     public void updateGridPixel(int x, int y, int color) {
         this.grid.set(x, y, color);
         this.pixelGridEventListener.accept(this.grid);

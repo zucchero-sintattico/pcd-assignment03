@@ -14,7 +14,5 @@ public interface Model {
 
     void removeBrush(String userId);
 
-    void addBrush(String userId, int x, int y, int color);
-
     void updateGridPixel(int x, int y, int color);
 }

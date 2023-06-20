@@ -16,8 +16,8 @@ import java.util.concurrent.TimeoutException;
 
 public class ControllerImpl implements Controller {
 
-    private ObservableModel model;
-    private PixelGridView view;
+    private final ObservableModel model;
+    private final PixelGridView view;
     private Boolean isSync = false;
     private final Boolean isNewConnection;
     private final List<PixelInfo> eventBuffer = new ArrayList<>();
@@ -64,19 +64,20 @@ public class ControllerImpl implements Controller {
         this.view.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                session.closeConnection(model.getUuid());
+                session.closeConnection();
                 super.windowClosing(e);
             }
 
         });
-        this.view.addColorChangedListener(this.model.getBrushManager().getBrushMap().get(this.model.getUuid())::setColor);
+        this.view.addColorChangedListener((c) -> {
+            this.model.getBrushManager().getBrushMap().get(this.model.getUuid()).setColor(c);
+        });
     }
 
     private void setModelListener() {
         this.model.setDisconnectEventListener((s) -> {
             this.view.getPanel().setBrushManager(this.model.getBrushManager());
             this.view.refresh();
-
         });
         this.model.setBrushManagerEventListener((b) -> {
             this.view.getPanel().setBrushManager(this.model.getBrushManager());
@@ -191,15 +192,5 @@ public class ControllerImpl implements Controller {
         };
         this.session.consume(this.session.getSessionId(), onGridRequest);
 
-    }
-
-    @Override
-    public void setView(PixelGridView view) {
-        this.view = view;
-    }
-
-    @Override
-    public void setModel(ObservableModel model) {
-        this.model = model;
     }
 }

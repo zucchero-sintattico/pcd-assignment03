@@ -6,7 +6,6 @@ import assignment.pixelGrid.view.PixelGridView;
 
 public interface Controller {
     void start();
-    void setView(PixelGridView view);
-    void setModel(ObservableModel model);
+
 
 }

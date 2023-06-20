@@ -5,7 +5,7 @@ import com.rabbitmq.client.DeliverCallback;
 public interface Session {
     void setUpConnection();
 
-    void closeConnection(String uuid);
+    void closeConnection();
 
     String getSessionId();
 
