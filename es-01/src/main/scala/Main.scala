@@ -7,14 +7,25 @@ import assignment.Domain.{Report, ReportConfiguration, Statistic}
 import assignment.actors.Algorithm.AppListener
 import assignment.actors.{Algorithm, System}
 
+import java.lang
 import java.nio.file.Path
 
 @main def main(): Unit =
   val system = ActorSystem(System(), "system")
   val commandLineViewListener = new AppListener {
-    override def onStart(): Unit = println("Started")
-    override def onStop(): Unit = println("Stopped")
-    override def onComplete(report: Report): Unit = println("\nCompleted: " + report)
+    private var startTime: Long = 0
+    private var endTime: Long = 0
+    override def onStart(): Unit =
+      println("Started")
+      startTime = lang.System.currentTimeMillis()
+    override def onStop(): Unit =
+      println("Stopped")
+
+
+    override def onComplete(report: Report): Unit =
+      println("\nCompleted: " + report)
+      endTime = lang.System.currentTimeMillis()
+      println(s"Time: ${(endTime - startTime)} ms")
 
     private def logInSameLine(numberOfFile: Int): Unit = {
       print(s"\rFiles: $numberOfFile")
@@ -31,7 +42,7 @@ import java.nio.file.Path
   )
 
   system ! System.Command.StartAlgorithm(
-    Path.of("../"),
+    Path.of("../../pcd-assignment01/generator/generated_files"),
     reportConfiguration,
     commandLineViewListener
   )

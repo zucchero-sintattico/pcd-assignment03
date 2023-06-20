@@ -9,6 +9,8 @@ import java.nio.file.Path
 import scala.math.Fractional.Implicits.infixFractionalOps
 import assignment.actors.Algorithm
 
+import scala.concurrent.Future
+
 object FolderScanner:
   enum Command:
     private[FolderScanner] case NewFolder(folder: File)
