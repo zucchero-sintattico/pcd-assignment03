@@ -16,7 +16,6 @@ public class PixelArtController implements Controller{
     private static final String NEW_BRUSH_POSITION_EXCHANGE_POSTFIX = "NewBrushPosition";
     private static final String NEW_PIXEL_POSITION_EXCHANGE_POSTFIX = "NewPixelUpdate";
     private static final String USER_DISCONNECTION_EXCHANGE_POSTFIX = "UserDisconnection";
-
     private String newBrushPositionExch;
     private String sessionId;
     private String userId;
@@ -47,8 +46,6 @@ public class PixelArtController implements Controller{
             this.declareQueues();
             System.out.println("defining callbacks");
             this.defineCallbacks();
-
-
             if(this.model.newSession){
                 this.defineSendGridCallback();
             }
