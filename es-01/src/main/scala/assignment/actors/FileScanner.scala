@@ -8,13 +8,15 @@ import assignment.Domain.*
 
 import java.nio.file.Path
 import scala.io.Source
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 import assignment.actors.Algorithm
 
 import java.util.concurrent.Executors
 import scala.concurrent.{ExecutionContext, Future}
 
 object FileScanner:
+
+  given ExecutionContext = ExecutionContext.fromExecutor(Executors.newCachedThreadPool())
 
   enum Command:
     private[FileScanner] case ScanResult(statistic: Statistic)
@@ -23,7 +25,12 @@ object FileScanner:
   def apply(path: Path, algorithm: ActorRef[Algorithm.Command]): Behavior[Command] =
     Behaviors.setup { context =>
 
-      context.self ! ScanResult(getStatistic(path))
+      context.pipeToSelf(Future {
+        getStatistic(path)
+      }) {
+        case Success(statistic) => ScanResult(statistic)
+        case Failure(exception) => ScanResult(Statistic(path, 0))
+      }
 
       Behaviors.receiveMessage {
         case ScanResult(statistic) =>
