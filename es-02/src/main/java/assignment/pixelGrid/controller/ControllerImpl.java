@@ -42,9 +42,6 @@ public class ControllerImpl implements Controller {
         } else {
             this.waitGridState();
         }
-        System.out.println(this.model.getBrushManager());
-        System.out.println(this.model.getGrid());
-
     }
 
     private void setViewListeners() {

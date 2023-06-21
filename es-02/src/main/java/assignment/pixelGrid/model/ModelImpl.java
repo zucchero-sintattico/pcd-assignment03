@@ -20,7 +20,7 @@ public class ModelImpl implements ObservableModel {
     public ModelImpl() {
         try {
             this.grid = new PixelGrid(40, 40);
-            this.setUpGrid();
+            this.fillGrid();
             this.brushManager.getBrushMap().put(this.userId, new BrushManager.Brush(0, 0, randomColor()));
         } catch (IOException | TimeoutException e) {
             throw new RuntimeException(e);
@@ -91,7 +91,7 @@ public class ModelImpl implements ObservableModel {
         this.disconnectEventListener = listener;
     }
 
-    private void setUpGrid() throws IOException, TimeoutException {
+    private void fillGrid() throws IOException, TimeoutException {
         this.grid = new PixelGrid(40, 40);
         Random rand = new Random();
         for (int i = 0; i < 10; i++) {
