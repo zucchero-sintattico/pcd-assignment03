@@ -1,6 +1,6 @@
-package assignment.pixelGrid.view;
+package assignment.pixelArt.view;
 
-import assignment.pixelGrid.controller.ControllerImpl;
+import assignment.pixelArt.controller.ControllerImpl;
 
 import javax.swing.*;
 

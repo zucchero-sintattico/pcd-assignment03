@@ -1,4 +1,4 @@
-package assignment.pixelGrid.model;
+package assignment.pixelArt.model;
 
 public interface Model {
 

@@ -1,4 +1,4 @@
-package assignment.pixelGrid.controller;
+package assignment.pixelArt.controller;
 
 import com.rabbitmq.client.DeliverCallback;
 

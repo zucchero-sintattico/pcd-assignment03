@@ -1,4 +1,4 @@
-package assignment.pixelGrid;
+package assignment.pixelArt;
 
 public class PixelInfo {
     private final int x;

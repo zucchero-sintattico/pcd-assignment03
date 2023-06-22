@@ -1,4 +1,4 @@
-package assignment.pixelGrid.model;
+package assignment.pixelArt.model;
 
 import java.io.IOException;
 import java.util.Random;

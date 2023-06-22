@@ -1,7 +1,7 @@
-package assignment.pixelGrid.view;
+package assignment.pixelArt.view;
 
-import assignment.pixelGrid.model.BrushManager;
-import assignment.pixelGrid.model.PixelGrid;
+import assignment.pixelArt.model.BrushManager;
+import assignment.pixelArt.model.PixelGrid;
 
 import javax.swing.*;
 import java.awt.*;

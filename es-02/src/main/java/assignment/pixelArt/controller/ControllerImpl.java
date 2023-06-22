@@ -1,10 +1,10 @@
-package assignment.pixelGrid.controller;
+package assignment.pixelArt.controller;
 
-import assignment.pixelGrid.PixelInfo;
-import assignment.pixelGrid.model.ModelImpl;
-import assignment.pixelGrid.model.ObservableModel;
-import assignment.pixelGrid.model.PixelGrid;
-import assignment.pixelGrid.view.PixelGridView;
+import assignment.pixelArt.PixelInfo;
+import assignment.pixelArt.model.ModelImpl;
+import assignment.pixelArt.model.ObservableModel;
+import assignment.pixelArt.model.PixelGrid;
+import assignment.pixelArt.view.PixelGridView;
 import com.rabbitmq.client.DeliverCallback;
 
 import java.awt.event.WindowAdapter;

@@ -1,10 +1,10 @@
-package assignment.pixelGrid.view;
+package assignment.pixelArt.view;
 
-import assignment.pixelGrid.model.BrushManager;
-import assignment.pixelGrid.model.PixelGrid;
-import assignment.pixelGrid.view.listeners.ColorChangeListener;
-import assignment.pixelGrid.view.listeners.MouseMovedListener;
-import assignment.pixelGrid.view.listeners.PixelGridEventListener;
+import assignment.pixelArt.model.BrushManager;
+import assignment.pixelArt.model.PixelGrid;
+import assignment.pixelArt.view.listeners.ColorChangeListener;
+import assignment.pixelArt.view.listeners.MouseMovedListener;
+import assignment.pixelArt.view.listeners.PixelGridEventListener;
 
 import javax.swing.*;
 import java.awt.*;
