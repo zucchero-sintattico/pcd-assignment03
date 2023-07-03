@@ -38,9 +38,9 @@ public class PixelArtController implements Controller {
     }
 
     @Override
-    public String create() {
+    public String create(String sessionId) {
         this.setupListeners();
-        final String sessionId = this.client.create();
+        this.client.create(sessionId);
         this.client.join(sessionId, randomColor());
         return sessionId;
     }

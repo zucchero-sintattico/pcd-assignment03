@@ -16,7 +16,7 @@ public interface Controller {
 
     void join(String sessionId);
 
-    String create();
+    String create(String sessionId);
 
     void leave();
 

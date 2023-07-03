@@ -76,9 +76,8 @@ public class PixelArtClient implements ObservableClient, RemoteClient {
     }
 
     @Override
-    public String create() {
+    public String create(String sessionId) {
         // Create and register the real server instance
-        final String sessionId = UUID.randomUUID().toString();
         final Session realSession = new PixelArtSession(sessionId);
         try {
             final Session realSessionStub = (Session) UnicastRemoteObject.exportObject(realSession, 0);

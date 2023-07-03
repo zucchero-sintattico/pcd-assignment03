@@ -10,7 +10,7 @@ public interface Client {
 
     void join(String sessionId, int color);
 
-    String create();
+    String create(String sessionId);
 
     void leave();
 

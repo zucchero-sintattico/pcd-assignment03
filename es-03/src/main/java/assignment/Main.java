@@ -15,7 +15,7 @@ public class Main {
                 new PixelArtController()
         );
 
-        final String sessionId = controllers.get(0).create();
+        final String sessionId = controllers.get(0).create("session");
         controllers.stream()
                 .skip(1)
                 .forEach(controller -> controller.join(sessionId));

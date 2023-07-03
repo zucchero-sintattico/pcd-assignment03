@@ -32,7 +32,7 @@ public class StartMenuView extends JFrame {
             }
         });
         createSessionButton.addActionListener(e -> {
-            String sessionId = this.controller.create();
+            String sessionId = this.controller.create(sessionIdField.getText());
             onSessionJoin.accept(sessionId);
         });
     }
